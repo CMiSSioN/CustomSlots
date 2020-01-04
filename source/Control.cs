@@ -48,6 +48,11 @@ namespace HandHeld
 
                 CustomComponents.Registry.RegisterSimpleCustomComponents(Assembly.GetExecutingAssembly());
 
+                CustomComponents.Validator.RegisterClearInventory(HandHeldHandler.ClearInventory);
+ //               CustomComponents.Validator.RegisterDropValidator(check: HandHeldHandler.PostValidator);
+                CustomComponents.Validator.RegisterMechValidator(HandHeldHandler.ValidateMech, HandHeldHandler.CanBeFielded);
+                CustomComponents.AutoFixer.Shared.RegisterMechFixer(HandHeldHandler.AutoFixMech);
+
                 Logger.LogDebug("done");
                 Logger.LogDebug(JSONSerializationUtility.ToJSON(Settings));
             }

@@ -4,8 +4,6 @@ using MechEngineer.Features.ArmActuators;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 
@@ -15,19 +13,19 @@ namespace HandHeld
     {
         public static TextMeshProUGUI TextElement { get; internal set; }
 
-        public static float GetCarryWeight(MechDef mech)
+        public static float GetCarryWeight(MechDef mech, IEnumerable<MechComponentRef> inventory)
         {
-            var tfactor = Control.Settings.CarryWeightFactor * (2 + NumOfHands(mech)) / 2f;
+            var tfactor = Control.Settings.CarryWeightFactor;
             float basetf = 0;
 
-            foreach (var item in mech.Inventory)
+            foreach (var item in inventory)
             {
-                if (item.Is<TSMInfo>(out var info))
+                if (item.Is<TSMInfoComponent>(out var info))
                 {
                     if (Control.Settings.MultiplicativeTonnageFactor)
-                        tfactor *= info.Mul;
+                        tfactor *= info.HandHeldFactor;
                     else
-                        basetf += (info.Mul - 1);
+                        basetf += (info.HandHeldFactor - 1);
                     continue;
                 }
 
@@ -49,11 +47,11 @@ namespace HandHeld
             return Mathf.Ceil(mech.Chassis.Tonnage * tfactor * 100) / 100f;
         }
 
-        public static int NumOfHands(MechDef mech)
+        public static int NumOfHands(MechDef mech, IEnumerable<MechComponentRef> inventory)
         {
            return Control.Settings.UseHandTag ?
-                mech.Inventory.Where(i => i.Def.ComponentTags.Contains(Control.Settings.HandsItemTag)).Count() :
-                mech.Inventory.Where(i => i.Is<ArmActuator>(out var arm) && arm.Type.HasFlag(ArmActuatorSlot.Hand)).Count();
+                inventory.Where(i => i.Def.ComponentTags.Contains(Control.Settings.HandsItemTag)).Count() :
+                inventory.Where(i => i.Is<ArmActuator>(out var arm) && arm.Type.HasFlag(ArmActuatorSlot.Hand)).Count();
 
         }
     }

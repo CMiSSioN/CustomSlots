@@ -102,12 +102,16 @@
   <ItemGroup>
     <Compile Include="CarryWeightTools.cs" />
     <Compile Include="Control.cs" />
+    <Compile Include="HandHeldDefault.cs" />
+    <Compile Include="HandHeldHandler.cs" />
     <Compile Include="HandHeldInfo.cs" />
     <Compile Include="HandHeldSettings.cs" />
     <Compile Include="Patches\MechLabStatBlockWidget_SetData.cs" />
     <Compile Include="Patches\MechPropertiesWidget_Setup.cs" />
+    <Compile Include="Patches\SimGameState_CreateComponentInstallWorkOrder.cs" />
+    <Compile Include="Patches\Validator_ValidateHardpoint.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TSmInfo.cs" />
+    <Compile Include="TSMInfoComponent.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\mod.json">

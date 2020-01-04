@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace HandHeld
 {
     [CustomComponent("TSMInfo")]
-    public class TSmInfo : SimpleCustomComponent
+    public class TSMInfoComponent : SimpleCustomComponent
     {
         public float HandHeldFactor = 2;
     }

@@ -28,7 +28,7 @@ namespace HandHeld.Patches
                 CarryWeightTools.TextElement.text = string.Format(Control.Settings.LocationLabel, 0, 0);
                 return;
             }
-            var TotalTonage = CarryWeightTools.GetCarryWeight(mechDef);
+            var TotalTonage = CarryWeightTools.GetCarryWeight(mechDef, mechDef.Inventory);
             var UsedTonnage = 0f;
             foreach (var item in mechDef.Inventory.Where(i => i.Is<HandHeldInfo>()).Select(i => i.GetComponent<HandHeldInfo>()))
             {
