@@ -24,7 +24,7 @@ namespace HandHeld
 
         public static void Init(string directory, string settingsJSON)
         {
-            Logger = HBS.Logging.Logger.GetLogger("CustomFilters", LogLevel.Debug);
+            Logger = HBS.Logging.Logger.GetLogger("HandHeld", LogLevel.Debug);
 
             try
             {
@@ -52,6 +52,7 @@ namespace HandHeld
  //               CustomComponents.Validator.RegisterDropValidator(check: HandHeldHandler.PostValidator);
                 CustomComponents.Validator.RegisterMechValidator(HandHeldHandler.ValidateMech, HandHeldHandler.CanBeFielded);
                 CustomComponents.AutoFixer.Shared.RegisterMechFixer(HandHeldHandler.AutoFixMech);
+
 
                 Logger.LogDebug("done");
                 Logger.LogDebug(JSONSerializationUtility.ToJSON(Settings));
@@ -105,7 +106,7 @@ namespace HandHeld
             }
             catch (Exception e)
             {
-                Logger.Log("CustomSalvage: can't create log file", e);
+                Logger.Log("HandHeld: can't create log file", e);
             }
         }
 

@@ -75,8 +75,8 @@ namespace HandHeld
 
                 if (handhelds.Count == 1)
                 {
-                    if (handhelds[0].ComponentRef.IsFixed)
-                        return (new Text($"Cannot replace {handhelds[0].ComponentRef.Def.Description.Name}")).ToString();
+                    if (handhelds[0].ComponentRef.IsModuleFixed(mech))
+                        return (new Text($"Cannot replace fixed {handhelds[0].ComponentRef.Def.Description.Name}")).ToString();
 
                     changes.Add(new RemoveChange(location.widget.loadout.Location, handhelds[0]));
                     var defaults = HandHeldHandler.GetDefaults(mech);
@@ -88,7 +88,7 @@ namespace HandHeld
                     var f1 = handhelds[1].ComponentRef.IsModuleFixed(mech);
 
                     if (f0 && f1)
-                        return (new Text($"Cannot replace {handhelds[0].ComponentRef.Def.Description.Name}")).ToString();
+                        return (new Text($"Cannot replace fixed equipment")).ToString();
                     if (f0 || f1)
                         changes.Add(new RemoveChange(location.widget.loadout.Location, handhelds[f0 ? 1 : 0]));
                     else
@@ -109,7 +109,7 @@ namespace HandHeld
                         else
                         {
                             f0 = handhelds[0].ComponentRef.GetComponent<HandHeldInfo>().HandsUsed == 0;
-                            f1 = handhelds[1].ComponentRef.GetComponent<HandHeldInfo>().HandsUsed == 1;
+                            f1 = handhelds[1].ComponentRef.GetComponent<HandHeldInfo>().HandsUsed == 0;
                             if (f0 && f1 || !(f0 || f1))
                                 changes.Add(new RemoveChange(location.widget.loadout.Location, handhelds[0]));
                             else

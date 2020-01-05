@@ -12,6 +12,7 @@ namespace HandHeld
     public static class CarryWeightTools
     {
         public static TextMeshProUGUI TextElement { get; internal set; }
+        public static LocationHelper Location { get; internal set; }
 
         public static float GetCarryWeight(MechDef mech, IEnumerable<MechComponentRef> inventory)
         {

@@ -1,0 +1,67 @@
+{
+    "Custom": {
+        "Category": [
+            {
+                "CategoryID": "Special"
+            }
+        ],
+        "BonusDescriptions": {
+            "Bonuses": [
+                "SpecialistSlotDefault",
+				"CarryCapacityExplain"
+            ]
+        },
+		"MechConfiguration" : {
+                },
+        "InventorySorter": {
+            "SortKey": "00024"
+        },
+		"HandHeld" : {
+			"HandsUsed" : 2,
+			"Tonnage" : 0
+		},
+		"Flags": {
+            "flags": [
+                "ignore_damage",
+				"default",
+                "autorepair",
+                "not_broken"
+            ]
+        }
+    },
+    "StatName": null,
+    "RelativeModifier": 0,
+    "AbsoluteModifier": 0,
+    "Description": {
+        "Cost": 0,
+        "Rarity": 99,
+        "Purchasable": true,
+        "Manufacturer": "Generic",
+        "Model": "slot",
+        "UIName": "2H Default",
+        "Id": "Gear_HandHeld_Default_2",
+        "Name": "2H default",
+        "Details": "Specialist Slots allow a Mech to apply Aftermarket and Unique Upgrades or Weaponry",
+        "Icon": "uixSvgIcon_equipment_TTS"
+    },
+    "BonusValueA": "2 hands",
+    "BonusValueB": "0 tons",
+    "ComponentType": "Upgrade",
+    "ComponentSubType": "Prototype_ElectronicWarfare",
+    "PrefabIdentifier": "",
+    "BattleValue": 0,
+    "InventorySize": 2,
+    "Tonnage": 0,
+    "AllowedLocations": "All",
+    "DisallowedLocations": "All",
+    "CriticalComponent": false,
+    "statusEffects": [
+    ],
+    "ComponentTags": {
+        "items": [
+            "component_type_stock",
+			"BLACKLISTED"
+        ],
+        "tagSetSourceFile": ""
+    }
+}

@@ -73,7 +73,7 @@ namespace HandHeld
             {
                 hands -= i.HandsUsed;
                 tonnage -= i.Tonnage;
-                if(i.HandsUsed == 1 && t1 - i.Tonnage < -0.001)
+                if (i.HandsUsed == 1 && t1 - i.Tonnage < -0.001)
                     errors[MechValidationType.InvalidInventorySlots].Add(new Text(string.Format(Control.Settings.WrongWeightMessage1H, i.Def.Description.Name, i.Tonnage, t1)));
             }
 
@@ -90,8 +90,12 @@ namespace HandHeld
             var helper = new MechLabHelper(mechLab);
             var mech = mechLab.activeMechDef;
             var items_to_remove = mech.Inventory.Where(i => i.IsDefault() && i.Is<HandHeldInfo>()).ToList();
+
             foreach (var item in items_to_remove)
-                DefaultHelper.RemoveMechLab(item.ComponentDefID, item.Def.ComponentType, helper, item.MountedLocation);
+                DefaultHelper.RemoveMechLab(item.ComponentDefID, item.ComponentDefType, helper, ChassisLocations.CenterTorso);
+                //RemoveMechLab(item);
+
+            mech.SetInventory(mech.Inventory.Where(i => !(i.IsDefault() && i.Is<HandHeldInfo>())).ToArray());
 
             var slot_used = mech.Inventory.Sum(i => i.Is<HandHeldInfo>(out var hh) ? (hh.HandsUsed <= 1 ? 1 : hh.HandsUsed) : 0);
             var items_to_add = GetDefaults(mechLab.activeMechDef);
@@ -102,37 +106,48 @@ namespace HandHeld
             }
             else if (slot_used < 2)
             {
-                DefaultHelper.AddMechLab(items_to_add[0].id, items_to_add[1].type, helper, ChassisLocations.CenterTorso);
+                DefaultHelper.AddMechLab(items_to_add[0].id, items_to_add[0].type, helper, ChassisLocations.CenterTorso);
                 if (slot_used == 0)
-                    DefaultHelper.AddMechLab(items_to_add[0].id, items_to_add[1].type, helper, ChassisLocations.CenterTorso);
+                    DefaultHelper.AddMechLab(items_to_add[1].id, items_to_add[1].type, helper, ChassisLocations.CenterTorso);
             }
         }
 
         internal static void AdjustDefaults(MechDef mech, SimGameState state)
         {
-            var inventory = mech.Inventory.Where(i => !(i.IsDefault() && i.Is<HandHeldInfo>())).ToList();
-            var slot_used = inventory.Sum(i => i.Is<HandHeldInfo>(out var hh) ? (hh.HandsUsed <= 1 ? 1 : hh.HandsUsed) : 0);
+            var test = mech.MechTags.Contains("hh_test_mech");
+            if (test)
+                Control.LogDebug($"- {mech.Description.Id}");
+            mech.SetInventory(mech.Inventory.Where(i => !(i.IsDefault() && i.Is<HandHeldInfo>())).ToArray());
+            var slot_used = mech.Inventory.Sum(i => i.Is<HandHeldInfo>(out var hh) ? (hh.HandsUsed <= 1 ? 1 : hh.HandsUsed) : 0);
             var items = GetDefaults(mech);
+
             if (slot_used == 0 && items[2] != null)
             {
+                if (test)
+                    Control.LogDebug($"-- Adding 2h default {items[2].id}");
                 DefaultHelper.AddInventory(items[2].id, mech, ChassisLocations.CenterTorso, items[2].type, state);
             }
             else if (slot_used < 2)
             {
                 DefaultHelper.AddInventory(items[0].id, mech, ChassisLocations.CenterTorso, items[0].type, state);
+                if (test)
+                    Control.LogDebug($"-- Adding 1h default {items[0].id}");
                 if (slot_used == 0)
+                {
+                    if (test)
+                        Control.LogDebug($"-- Adding 1h default {items[1].id}");
                     DefaultHelper.AddInventory(items[1].id, mech, ChassisLocations.CenterTorso, items[1].type, state);
+                }
             }
-            mech.SetInventory(inventory.ToArray());
         }
 
         public static DefInfo[] GetDefaults(MechDef mech)
         {
             if (mech.Chassis.Is<HandHeldDefault>(out var hhd))
                 return new DefInfo[] {
-                    new DefInfo(hhd.Item1HID1, hhd.Type1),
-                    new DefInfo(hhd.Item1HID1, hhd.Type1),
-                    string.IsNullOrEmpty(hhd.Item2HID) ? null : new DefInfo(hhd.Item2HID, hhd.TypeH)};
+                    new DefInfo(hhd.Item1H_ID1, hhd.Type1),
+                    new DefInfo(hhd.Item1H_ID2, hhd.Type2),
+                    string.IsNullOrEmpty(hhd.Item2H_ID) ? null : new DefInfo(hhd.Item2H_ID, hhd.TypeH)};
             else
                 return new DefInfo[] { new DefInfo(), new DefInfo(), null };
         }
@@ -151,8 +166,48 @@ namespace HandHeld
 
         internal static void AutoFixMech(List<MechDef> mechDefs, SimGameState simgame)
         {
+            Control.LogDebug("AutoFixing start");
             foreach (var mech in mechDefs)
-                AdjustDefaults(mech, simgame);
+            {
+                try
+                {
+                    AdjustDefaults(mech, simgame);
+                }
+                catch (Exception e)
+                {
+                    Control.LogError($"Error while fixing {mech.Description.Id}: ", e);
+                }
+
+            }
+            Control.LogDebug("AutoFixing done");
+
+        }
+
+        internal static void RemoveMechLab(MechComponentRef item)
+        {
+            var remove = CarryWeightTools.Location.LocalInventory.FirstOrDefault(i => i.ComponentRef == item);
+            if (remove == null)
+            {
+                Control.LogError($"Cannot find {item.ComponentDefID} to remove {item.SimGameUID}");
+                Control.LogDebug($"- local inventory");
+                foreach (var i in CarryWeightTools.Location.LocalInventory)
+                {
+                    Control.LogDebug($"-- {i.ComponentRef.ComponentDefID} - {i.ComponentRef.SimGameUID} - {i.MountedLocation}");
+                }
+                var widget = CarryWeightTools.Location.mechLab.GetLocationWidget(ArmorLocation.CenterTorso);
+                var helper = new LocationHelper(widget);
+                Control.LogDebug($"- ct inventory");
+                foreach (var i in helper.LocalInventory)
+                {
+                    Control.LogDebug($"-- {i.ComponentRef.ComponentDefID} - {i.ComponentRef.SimGameUID} - {i.MountedLocation}");
+                }
+
+            }
+
+            CarryWeightTools.Location.widget.OnRemoveItem(remove, true);
+            remove.thisCanvasGroup.blocksRaycasts = true;
+            CarryWeightTools.Location.mechLab.dataManager.PoolGameObject(MechLabPanel.MECHCOMPONENT_ITEM_PREFAB, remove.GameObject);
+
         }
     }
 }

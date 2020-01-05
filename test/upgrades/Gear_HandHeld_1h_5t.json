@@ -1,0 +1,58 @@
+{
+    "Custom": {
+        "Category": [
+            {
+                "CategoryID": "HHTEST"
+            }
+        ],
+        "BonusDescriptions": {
+            "Bonuses": [
+                "SpecialistSlotDefault",
+				"CarryCapacityExplain"
+            ]
+        },
+		"MechConfiguration" : {
+                },
+        "InventorySorter": {
+            "SortKey": "00024"
+        },
+		"HandHeld" : {
+			"HandsUsed" : 1,
+			"Tonnage" : 5
+		}
+    },
+    "StatName": null,
+    "RelativeModifier": 0,
+    "AbsoluteModifier": 0,
+    "Description": {
+        "Cost": 0,
+        "Rarity": 99,
+        "Purchasable": true,
+        "Manufacturer": "Generic",
+        "Model": "Empty Slot",
+        "UIName": "hh 1h 5t",
+        "Id": "Gear_HandHeld_1h_5t",
+        "Name": "HH 1s5t",
+        "Details": "Specialist Slots allow a Mech to apply Aftermarket and Unique Upgrades or Weaponry",
+        "Icon": "uixSvgIcon_equipment_TTS"
+    },
+    "BonusValueA": "1 hand",
+    "BonusValueB": "5 t",
+    "ComponentType": "Upgrade",
+    "ComponentSubType": "Prototype_ElectronicWarfare",
+    "PrefabIdentifier": "",
+    "BattleValue": 0,
+    "InventorySize": 1,
+    "Tonnage": 0,
+    "AllowedLocations": "All",
+    "DisallowedLocations": "All",
+    "CriticalComponent": false,
+    "statusEffects": [
+    ],
+    "ComponentTags": {
+        "items": [
+            "component_type_stock"
+        ],
+        "tagSetSourceFile": ""
+    }
+}
