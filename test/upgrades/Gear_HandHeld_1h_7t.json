@@ -17,7 +17,7 @@
             "SortKey": "00024"
         },
 		"HandHeld" : {
-			"HandsUsed" : 1,
+			"HandsUsed" : true,
 			"Tonnage" : 7
 		}
     },
@@ -39,7 +39,7 @@
     "BonusValueA": "1 hand",
     "BonusValueB": "7 t",
     "ComponentType": "Upgrade",
-    "ComponentSubType": "Prototype_ElectronicWarfare",
+    "ComponentSubType": "NotSet",
     "PrefabIdentifier": "",
     "BattleValue": 0,
     "InventorySize": 1,

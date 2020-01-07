@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 using BattleTech.UI;
+using BattleTech.UI.TMProWrapper;
 using CustomComponents;
 using Harmony;
 using System;
@@ -35,6 +36,15 @@ namespace HandHeld.Patches
                 UsedTonnage += item.Tonnage;
             }
             CarryWeightTools.TextElement.text = string.Format(Control.Settings.LocationLabel, UsedTonnage, TotalTonage);
+
+            foreach (var item in CarryWeightTools.CenterTorso.LocalInventory)
+                if (item.ComponentRef.Is<HandHeldInfo>(out var hh) && hh.HandsUsed)
+                {
+                    int hu = hh.hands_used(TotalTonage);
+                    var traverse = new Traverse(item).Field<LocalizableText>("nameText");
+                    traverse.Value.SetText($"{item.ComponentRef.Def.Description.UIName} ({hu}H)");
+
+                }
         }
     }
 }

@@ -17,7 +17,7 @@ namespace HandHeld
             if (!mechComponent.Is<HandHeldInfo>(out var hh))
                 return;
 
-            if (newLocation != ChassisLocations.None && hh.HandsUsed > 0)
+            if (newLocation != ChassisLocations.None && hh.HandsUsed)
             {
                 var tr = Traverse.Create(__result);
                 tr.Field<int>("Cost").Value = 1;

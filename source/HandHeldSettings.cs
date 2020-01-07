@@ -31,7 +31,7 @@ namespace HandHeld
 
         public string TwoHandMissed = "Mech need two free hand actuators to use {0}";
         public string OneHandMissed = "Mech need one free hand actuators to use {0}";
-        public string ValidateHands = "Mech need {0} free hand actuators to use installed hand helds";
+        public string ValidateHands = "Mech need {0} hand actuators to use installed hand helds";
         public string ValidateTonnage = "Mech need {0:0.00}t more carry weight to use installed hand helds";
 
         public string WrongWeightMessage = "{0} weight {1:0.00}t, mech can carry up to {2:0.00}t items";
