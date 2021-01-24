@@ -14,15 +14,24 @@ namespace HandHeld
 {
 
 
-    public static class Control
+    public class Control
     {
-        public static HandHeldSettings Settings = new HandHeldSettings();
+        private static Control _instance;
+        public static Control Instance => _instance ?? (_instance = new Control());
+
+
+
+        public HandHeldSettings Settings = new HandHeldSettings();
 
         private static ILog Logger;
         private static FileLogAppender logAppender;
 
-
         public static void Init(string directory, string settingsJSON)
+        {
+            Instance.InitNonStatic(directory, settingsJSON);
+        }
+
+        private void InitNonStatic(string directory, string settingsJSON)
         {
             Logger = HBS.Logging.Logger.GetLogger("HandHeld", LogLevel.Debug);
 
@@ -48,10 +57,14 @@ namespace HandHeld
 
                 CustomComponents.Registry.RegisterSimpleCustomComponents(Assembly.GetExecutingAssembly());
 
-                CustomComponents.Validator.RegisterClearInventory(HandHeldHandler.ClearInventory);
- //               CustomComponents.Validator.RegisterDropValidator(check: HandHeldHandler.PostValidator);
-                CustomComponents.Validator.RegisterMechValidator(HandHeldHandler.ValidateMech, HandHeldHandler.CanBeFielded);
-                CustomComponents.AutoFixer.Shared.RegisterMechFixer(HandHeldHandler.AutoFixMech);
+                CustomComponents.Validator.RegisterClearInventory(HandHeldController.ClearInventory);
+                CustomComponents.Validator.RegisterClearInventory(SpecialControler.ClearInventory);
+
+                //CustomComponents.Validator.RegisterDropValidator( check: HandHeldController.PostValidator);
+                CustomComponents.Validator.RegisterMechValidator(HandHeldController.ValidateMech, HandHeldController.CanBeFielded);
+                CustomComponents.Validator.RegisterMechValidator(SpecialControler.ValidateMech, SpecialControler.CanBeFielded);
+                CustomComponents.AutoFixer.Shared.RegisterMechFixer(HandHeldController.AutoFixMech);
+                CustomComponents.AutoFixer.Shared.RegisterMechFixer(SpecialControler.AutoFixMech);
 
 
                 Logger.LogDebug("done");
@@ -65,37 +78,37 @@ namespace HandHeld
 
         #region LOGGING
         [Conditional("CCDEBUG")]
-        public static void LogDebug(string message)
+        public void LogDebug(string message)
         {
             Logger.LogDebug(message);
         }
         [Conditional("CCDEBUG")]
-        public static void LogDebug(string message, Exception e)
+        public void LogDebug(string message, Exception e)
         {
             Logger.LogDebug(message, e);
         }
 
-        public static void LogError(string message)
+        public void LogError(string message)
         {
             Logger.LogError(message);
         }
-        public static void LogError(string message, Exception e)
+        public void LogError(string message, Exception e)
         {
             Logger.LogError(message, e);
         }
-        public static void LogError(Exception e)
+        public void LogError(Exception e)
         {
             Logger.LogError(e);
         }
 
-        public static void Log(string message)
+        public void Log(string message)
         {
             Logger.Log(message);
         }
 
 
 
-        internal static void SetupLogging(string Directory)
+        internal void SetupLogging(string Directory)
         {
             var logFilePath = Path.Combine(Directory, "log.txt");
 
@@ -110,7 +123,7 @@ namespace HandHeld
             }
         }
 
-        internal static void ShutdownLogging()
+        internal void ShutdownLogging()
         {
             if (logAppender == null)
             {
@@ -130,7 +143,7 @@ namespace HandHeld
             logAppender = null;
         }
 
-        private static void AddLogFileForLogger(string logFilePath)
+        private void AddLogFileForLogger(string logFilePath)
         {
             try
             {

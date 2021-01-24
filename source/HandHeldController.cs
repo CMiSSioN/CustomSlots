@@ -10,7 +10,7 @@ using Localize;
 
 namespace HandHeld
 {
-    public static class HandHeldHandler
+    public static class HandHeldController
     {
         public class DefInfo
         {
@@ -19,7 +19,7 @@ namespace HandHeld
 
             public DefInfo()
             {
-                this.id = Control.Settings.HandHeldSlotItemID;
+                this.id = Control.Instance.Settings.HandHeldSlotItemID;
                 this.type = ComponentType.Upgrade;
             }
 
@@ -27,7 +27,7 @@ namespace HandHeld
             {
                 if (string.IsNullOrEmpty(id))
                 {
-                    this.id = Control.Settings.HandHeldSlotItemID;
+                    this.id = Control.Instance.Settings.HandHeldSlotItemID;
                     this.type = ComponentType.Upgrade;
                 }
                 else
@@ -75,23 +75,23 @@ namespace HandHeld
             var tonnage = CarryWeightTools.GetCarryWeight(mech, inventory);
             var hands = CarryWeightTools.NumOfHands(mech, inventory);
 
-            var handhelds = new_inventory.Where(i => i.item.Is<HandHeldInfo>())
+            var hhitems = new_inventory.Where(i => i.item.Is<HandHeldInfo>())
                 .Select(i => i.item.GetComponent<HandHeldInfo>());
 
-            float used_tonnage = 0;
+            float used_tonnage = CarryWeightTools.GetUsedWeight(mech,new_inventory.Select(i => i.item));
             int used_hands = 0;
 
-            foreach (var item in handhelds)
+            foreach (var item in hhitems)
             {
                 int hu = item.HandsUsed ? item.hands_used(tonnage) : 0;
                 used_hands += hu;
-                used_tonnage += item.Tonnage;
             }
+
             if (used_hands > hands)
-                return new Text(string.Format(Control.Settings.ValidateHands, used_hands)).ToString();
+                return new Text(string.Format(Control.Instance.Settings.ValidateHands, used_hands)).ToString();
 
             if (used_tonnage > tonnage + 0.001)
-                return new Text(string.Format(Control.Settings.ValidateTonnage, used_tonnage - tonnage)).ToString();
+                return new Text(string.Format(Control.Instance.Settings.ValidateTonnage, used_tonnage - tonnage)).ToString();
 
             return string.Empty;
         }
@@ -102,20 +102,19 @@ namespace HandHeld
             int hands = CarryWeightTools.NumOfHands(mechDef, mechDef.Inventory);
             float tonnage = CarryWeightTools.GetCarryWeight(mechDef, mechDef.Inventory);
             int hands_used = 0;
-            float tonnage_used = 0;
+            float tonnage_used = CarryWeightTools.GetUsedWeight(mechDef, mechDef.Inventory);
 
 
             foreach (var i in mechDef.Inventory.Where(i => i.Is<HandHeldInfo>()).Select(i => i.GetComponent<HandHeldInfo>()))
             {
                 hands_used += i.HandsUsed ? i.hands_used(tonnage) : 0;
-                tonnage_used += i.Tonnage;
             }
 
             if (hands < hands_used)
-                errors[MechValidationType.InvalidInventorySlots].Add(new Text(string.Format(Control.Settings.ValidateHands, hands_used)));
+                errors[MechValidationType.InvalidInventorySlots].Add(new Text(string.Format(Control.Instance.Settings.ValidateHands, hands_used)));
 
             if (tonnage + 0.001 < tonnage_used)
-                errors[MechValidationType.InvalidInventorySlots].Add(new Text(Control.Settings.ValidateTonnage, tonnage_used - tonnage));
+                errors[MechValidationType.InvalidInventorySlots].Add(new Text(Control.Instance.Settings.ValidateTonnage, tonnage_used - tonnage));
 
         }
 
@@ -151,7 +150,7 @@ namespace HandHeld
         {
             var test = mech.MechTags.Contains("hh_test_mech");
             if (test)
-                Control.LogDebug($"- {mech.Description.Id}");
+                Control.Instance.LogDebug($"- {mech.Description.Id}");
             mech.SetInventory(mech.Inventory.Where(i => !(i.IsDefault() && i.Is<HandHeldInfo>())).ToArray());
 
             var slot_used = mech.Inventory.Sum(i => i.Is<HandHeldInfo>(out var hh) ? hh.SlotSize : 0);
@@ -160,18 +159,18 @@ namespace HandHeld
             if (slot_used == 0 && items[2] != null)
             {
                 if (test)
-                    Control.LogDebug($"-- Adding 2h default {items[2].id}");
+                    Control.Instance.LogDebug($"-- Adding 2h default {items[2].id}");
                 DefaultHelper.AddInventory(items[2].id, mech, ChassisLocations.CenterTorso, items[2].type, state);
             }
             else if (slot_used < 2)
             {
                 DefaultHelper.AddInventory(items[0].id, mech, ChassisLocations.CenterTorso, items[0].type, state);
                 if (test)
-                    Control.LogDebug($"-- Adding 1h default {items[0].id}");
+                    Control.Instance.LogDebug($"-- Adding 1h default {items[0].id}");
                 if (slot_used == 0)
                 {
                     if (test)
-                        Control.LogDebug($"-- Adding 1h default {items[1].id}");
+                        Control.Instance.LogDebug($"-- Adding 1h default {items[1].id}");
                     DefaultHelper.AddInventory(items[1].id, mech, ChassisLocations.CenterTorso, items[1].type, state);
                 }
             }
@@ -193,19 +192,18 @@ namespace HandHeld
         {
             int hands = CarryWeightTools.NumOfHands(mechDef, mechDef.Inventory);
             float tonnage = CarryWeightTools.GetCarryWeight(mechDef, mechDef.Inventory);
-            float used_tonnage = 0;
+            float used_tonnage = CarryWeightTools.GetUsedWeight(mechDef, mechDef.Inventory);
 
             foreach (var i in mechDef.Inventory.Where(i => i.Is<HandHeldInfo>()).Select(i => i.GetComponent<HandHeldInfo>()))
             {
                 hands -= i.HandsUsed ? i.hands_used(tonnage) : 0;
-                used_tonnage -= i.Tonnage;
             }
             return tonnage - used_tonnage >= -0.001 && hands >= 0;
         }
 
         internal static void AutoFixMech(List<MechDef> mechDefs, SimGameState simgame)
         {
-            Control.LogDebug("AutoFixing start");
+            Control.Instance.LogDebug("AutoFixing start");
             foreach (var mech in mechDefs)
             {
                 try
@@ -214,11 +212,11 @@ namespace HandHeld
                 }
                 catch (Exception e)
                 {
-                    Control.LogError($"Error while fixing {mech.Description.Id}: ", e);
+                    Control.Instance.LogError($"Error while fixing {mech.Description.Id}: ", e);
                 }
 
             }
-            Control.LogDebug("AutoFixing done");
+            Control.Instance.LogDebug("AutoFixing done");
 
         }
     }
