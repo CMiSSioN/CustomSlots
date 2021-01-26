@@ -118,8 +118,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SlotsInfoDatabase.cs" />
     <Compile Include="SlotSupport.cs" />
-    <Compile Include="SpecialControler.cs" />
-    <Compile Include="SpecialDefault.cs" />
+    <Compile Include="CustomSlotControler.cs" />
+    <Compile Include="SlotsOverride.cs" />
     <Compile Include="CustomSlotInfo.cs" />
     <Compile Include="TSMInfoComponent.cs" />
   </ItemGroup>

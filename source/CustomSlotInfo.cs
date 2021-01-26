@@ -31,22 +31,22 @@ namespace CustomSlots
 
         public void OnInstalled(WorkOrderEntry_InstallComponent order, SimGameState state, MechDef mech)
         {
-            var max = SpecialControler.SlotsUsed(mech);
-            var sdef = SpecialControler.GetDefInfo(mech);
+            var max = CustomSlotControler.SlotsUsed(mech);
+            var sdef = CustomSlotControler.GetDefInfo(mech);
 
-            SpecialControler.AdjustDefaults(mech, state, max, sdef);
+            CustomSlotControler.AdjustDefaults(mech, state, max, sdef);
         }
 
         public void OnItemGrabbed(IMechLabDraggableItem item, MechLabPanel mechLab, MechLabLocationWidget widget)
         {
-            SpecialControler.AdjustDefaultsMechlab(mechLab);
+            CustomSlotControler.AdjustDefaultsMechlab(mechLab);
         }
 
         public string ReplaceValidateDrop(MechLabItemSlotElement drop_item, LocationHelper location, List<IChange> changes)
         {
             var mech = location.mechLab.activeMechDef;
-//            var total = SpecialControler.SlotsTotal(mech);
-            var sdef = SpecialControler.GetDefInfo(mech);
+//            var total = CustomSlotControler.SlotsTotal(mech);
+            var sdef = CustomSlotControler.GetDefInfo(mech);
 
             //var used_fixed = mech.Inventory.Where(i => i.IsModuleFixed(mech)).Where(i => i.Is<CustomSlotInfo>())
             //    .Sum(i => i.GetComponent<CustomSlotInfo>().SpecSlotUsed);
@@ -86,7 +86,7 @@ namespace CustomSlots
             if (SpecSlotUsed < used)
             {
                 var to_fill = used - SpecSlotUsed;
-                var defs_to_place = SpecialControler.GetDefaults(mech, location.mechLab.sim, sdef);
+                var defs_to_place = CustomSlotControler.GetDefaults(mech, location.mechLab.sim, sdef);
 
                 int n = 0;
                 while (to_fill > 0)
@@ -110,7 +110,7 @@ namespace CustomSlots
         public string PreValidateDrop(MechLabItemSlotElement item, LocationHelper location, MechLabHelper mechlab)
         {
             var mech = location.mechLab.activeMechDef;
-            var total = SpecialControler.SlotsTotal(mech);
+            var total = CustomSlotControler.SlotsTotal(mech);
 
             var used = mech.Inventory.Where(i => i.IsModuleFixed(mech)).Where(i => i.Is<CustomSlotInfo>())
                 .Sum(i => i.GetComponent<CustomSlotInfo>().SpecSlotUsed);

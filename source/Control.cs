@@ -62,13 +62,13 @@ namespace CustomSlots
                 CustomComponents.Registry.RegisterSimpleCustomComponents(Assembly.GetExecutingAssembly());
 
                 CustomComponents.Validator.RegisterClearInventory(HandHeldController.ClearInventory);
-                CustomComponents.Validator.RegisterClearInventory(SpecialControler.ClearInventory);
+                CustomComponents.Validator.RegisterClearInventory(CustomSlotControler.ClearInventory);
 
                 //CustomComponents.Validator.RegisterDropValidator( check: HandHeldController.PostValidator);
                 CustomComponents.Validator.RegisterMechValidator(HandHeldController.ValidateMech, HandHeldController.CanBeFielded);
-                CustomComponents.Validator.RegisterMechValidator(SpecialControler.ValidateMech, SpecialControler.CanBeFielded);
+                CustomComponents.Validator.RegisterMechValidator(CustomSlotControler.ValidateMech, CustomSlotControler.CanBeFielded);
                 CustomComponents.AutoFixer.Shared.RegisterMechFixer(HandHeldController.AutoFixMech);
-                CustomComponents.AutoFixer.Shared.RegisterMechFixer(SpecialControler.AutoFixMech);
+                CustomComponents.AutoFixer.Shared.RegisterMechFixer(CustomSlotControler.AutoFixMech);
 
 
                 Logger.LogDebug("done");

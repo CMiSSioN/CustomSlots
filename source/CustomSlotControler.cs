@@ -10,7 +10,7 @@ using Localize;
 namespace CustomSlots
 {
 
-    public static class SpecialControler
+    public static class CustomSlotControler
     {
         public class defrecord
         {
@@ -19,9 +19,14 @@ namespace CustomSlots
         }
 
         //for patching
-        public static ISpecialSlotDefaults GetDefInfo(MechDef mech)
+        public static ISlotsOverride GetSlotsOverride(MechDef mech, string type)
         {
-            return mech.Chassis.GetComponent<SpecialDefault>();
+            var customs = mech.GetComponents<ISlotsOverride>();
+            if (customs != null)
+                return customs.FirstOrDefault(i => i.SlotName == type);
+            
+            return null;
+
         }
 
         public static int SlotsTotal(MechDef mech, IEnumerable<MechComponentRef> inventory = null)

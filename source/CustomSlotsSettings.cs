@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using BattleTech;
-using BattleTech.UI;
 using HBS.Logging;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -10,20 +9,24 @@ using UnityEngine;
 namespace CustomSlots
 {
 
-    public class Slot
+    public class def_record
+    {
+        public string id;
+        public ComponentType type;
+    }
+
+    public class location_record
     {
         public ChassisLocations Location { get; set; }
-        public int Count { get; set; }
+        public int Count { get; set; } = 1;
 
-        public string[] Defaults;
+        public def_record[] Defaults;
     }
 
     public class SlotInfo
     {
         public string UnitType { get; set; }
-        public Slot[] Slots { get; set; }
-
-
+        public location_record[] Slots { get; set; }
     }
 
     public class SlotTypeDescriptor
@@ -37,7 +40,8 @@ namespace CustomSlots
         [JsonIgnore] public Color block_color;
         [JsonIgnore] public Color avail_color;
 
-        public string DefaultItemsID { get; set; } = "Gear_Empty_Slot";
+        public def_record DefaultItem { get; set; } = new def_record()
+        { id = "Gear_Slot_Default", type = ComponentType.Upgrade };
 
         public SlotInfo[] UnitSlots;
 
@@ -45,7 +49,7 @@ namespace CustomSlots
         {
             if (HaveSupports)
             {
-                if(!ColorUtility.TryParseHtmlString(AvaliableColor, out avail_color))
+                if (!ColorUtility.TryParseHtmlString(AvaliableColor, out avail_color))
                     avail_color = Color.green;
 
                 if (!ColorUtility.TryParseHtmlString(BlockedColor, out block_color))
