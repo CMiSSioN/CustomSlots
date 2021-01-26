@@ -1,32 +1,50 @@
 ﻿using BattleTech;
 using CustomComponents;
+using System.Collections.Generic;
+using System.Linq;
 
-namespace HandHeld
+namespace CustomSlots
 {
+
+    public class def_record
+    {
+        public string id;
+        public ComponentType type;
+    }
+
+    public class location_record
+    {
+        public ChassisLocations Location;
+        public int MaxSlots = -1;
+        public def_record[] Defaults;
+    }
 
     public interface ISpecialSlotDefaults
     {
-        public int MaxSlots { get; }
+        public string SlotName { get; }
 
-        public SpecialDefault.record[] Defaults { get; }
-
-        public string DefaultSlotId { get; }
+        public Dictionary<ChassisLocations, location_record> LocationDict { get; }
+        public string DefaultID { get; }
     }
 
 
-    [CustomComponent("SpecialDefaults")]
-    public class SpecialDefault : SimpleCustomChassis, ISpecialSlotDefaults
+    [CustomComponent("SlotsOverride")]
+    public class SlotsOverride : SimpleCustomChassis, ISpecialSlotDefaults, IAfterLoad
     {
-        public class record
+        public string SlotName { get; set; }
+
+        public Dictionary<ChassisLocations, location_record> LocationDict { get; set; }
+
+        public location_record[] Locations;
+
+        public string DefaultID { get; set; } = null;
+
+        public void OnLoaded(Dictionary<string, object> values)
         {
-            public string id;
-            public ComponentType type;
+            LocationDict = (Locations == null || Locations.Length == 0) ?
+                new Dictionary<ChassisLocations, location_record>() :
+                Locations.ToDictionary(i => i.Location);
+
         }
-
-        public int MaxSlots { get; set; } = -1;
-
-        public record[] Defaults { get; set; }
-
-        public string DefaultSlotId { get; set; } = "";
     }
 }

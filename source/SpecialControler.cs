@@ -7,7 +7,7 @@ using CustomComponents;
 using JetBrains.Annotations;
 using Localize;
 
-namespace HandHeld
+namespace CustomSlots
 {
 
     public static class SpecialControler
@@ -15,7 +15,7 @@ namespace HandHeld
         public class defrecord
         {
             public MechComponentRef item;
-            public SpecialInfo si;
+            public CustomSlotInfo si;
         }
 
         //for patching
@@ -70,7 +70,7 @@ namespace HandHeld
         {
             var inventory = mechDef.Inventory.ToList();
 
-            inventory.RemoveAll(i => i.IsDefault() && i.Is<SpecialInfo>());
+            inventory.RemoveAll(i => i.IsDefault() && i.Is<CustomSlotInfo>());
             var defaults = GetDefaults(mechDef, simgame, sdef);
             int used = SlotsUsed(mechDef, inventory);
 
@@ -95,13 +95,13 @@ namespace HandHeld
             if (mech == null)
                 return;
 
-            result.RemoveAll(i => i.Is<SpecialInfo>() && !i.IsFixed);
+            result.RemoveAll(i => i.Is<CustomSlotInfo>() && !i.IsFixed);
             var used = SlotsUsed(mech, result);
             var max = SlotsTotal(mech, result);
             var sdef = GetDefInfo(mech);
 
 
-            result.RemoveAll(i => i.IsDefault() && i.Is<SpecialInfo>());
+            result.RemoveAll(i => i.IsDefault() && i.Is<CustomSlotInfo>());
             var defaults = GetDefaults(mech, simgame, sdef);
  
             int n = 0;
@@ -123,7 +123,7 @@ namespace HandHeld
             var helper = new MechLabHelper(mechLab);
             var mech = mechLab.activeMechDef;
 
-            var items_to_remove = mech.Inventory.Where(i => i.IsDefault() && i.Is<SpecialInfo>()).ToList();
+            var items_to_remove = mech.Inventory.Where(i => i.IsDefault() && i.Is<CustomSlotInfo>()).ToList();
 
             foreach (var item in items_to_remove)
                 DefaultHelper.RemoveMechLab(item.ComponentDefID, item.ComponentDefType, helper, ChassisLocations.CenterTorso);
@@ -160,7 +160,7 @@ namespace HandHeld
                 foreach (var record in sdef.Defaults)
                 {
                     var item = DefaultHelper.CreateRef(record.id, record.type, dm, sim);
-                    if(item != null && item.Is<SpecialInfo>(out var si))
+                    if(item != null && item.Is<CustomSlotInfo>(out var si))
                         result.Add(new defrecord() {item = item, si =  si});
                 }
 
@@ -173,7 +173,7 @@ namespace HandHeld
                 sim);
             result.Add(new defrecord() { 
                 item = def,
-                si = def.GetComponent<SpecialInfo>()
+                si = def.GetComponent<CustomSlotInfo>()
             });
             return result;
 

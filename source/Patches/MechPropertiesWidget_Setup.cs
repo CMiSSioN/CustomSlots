@@ -9,7 +9,7 @@ using MechEngineer.Features.MechLabSlots;
 using TMPro;
 using CustomComponents;
 
-namespace HandHeld.Patches
+namespace CustomSlots.Patches
 {
     [HarmonyPatch(typeof(MechPropertiesWidget))]
     [HarmonyPatch("Setup")]

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using CustomComponents;
 using BattleTech;
 
-namespace HandHeld
+namespace CustomSlots
 {
     [CustomComponent("HandHeldDefault")]
     public class HandHeldDefault : SimpleCustomChassis

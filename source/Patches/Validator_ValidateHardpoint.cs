@@ -7,7 +7,7 @@ using BattleTech.UI;
 using CustomComponents;
 using Harmony;
 
-namespace HandHeld
+namespace CustomSlots
 {
     [HarmonyPatch(typeof(Validator))]
     [HarmonyPatch("ValidateHardpoint")]

@@ -2,7 +2,7 @@
 using CustomComponents;
 using Harmony;
 
-namespace HandHeld
+namespace CustomSlots
 {
     [HarmonyPatch(typeof(SimGameState), "CreateComponentInstallWorkOrder")]
     public static class SimGameState_CreateComponentInstallWorkOrder

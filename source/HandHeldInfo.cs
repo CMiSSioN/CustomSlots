@@ -10,7 +10,7 @@ using Localize;
 using MechEngineer.Features;
 using MechEngineer.Features.ArmActuators;
 
-namespace HandHeld
+namespace CustomSlots
 {
     [CustomComponent("UseCarryWeight")]
     public class UseCarryWeight : SimpleCustomComponent, IUseTonnage

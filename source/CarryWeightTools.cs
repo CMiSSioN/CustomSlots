@@ -8,7 +8,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 
-namespace HandHeld
+namespace CustomSlots
 {
     public static class CarryWeightTools
     {

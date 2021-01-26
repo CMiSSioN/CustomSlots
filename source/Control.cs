@@ -10,18 +10,22 @@ using HBS.Logging;
 using HBS.Util;
 
 
-namespace HandHeld
+namespace CustomSlots
 {
 
 
     public class Control
     {
+        private string prefix = "[CSl]";
+
+
         private static Control _instance;
+
         public static Control Instance => _instance ?? (_instance = new Control());
 
 
 
-        public HandHeldSettings Settings = new HandHeldSettings();
+        public CustomSlotsSettings Settings = new CustomSlotsSettings();
 
         private static ILog Logger;
         private static FileLogAppender logAppender;
@@ -33,19 +37,19 @@ namespace HandHeld
 
         private void InitNonStatic(string directory, string settingsJSON)
         {
-            Logger = HBS.Logging.Logger.GetLogger("HandHeld", LogLevel.Debug);
+            Logger = HBS.Logging.Logger.GetLogger("CustomSlots", LogLevel.Debug);
 
             try
             {
                 try
                 {
-                    Settings = new HandHeldSettings();
+                    Settings = new CustomSlotsSettings();
                     JSONSerializationUtility.FromJSON(Settings, settingsJSON);
                     HBS.Logging.Logger.SetLoggerLevel(Logger.Name, Settings.LogLevel);
                 }
                 catch (Exception)
                 {
-                    Settings = new HandHeldSettings();
+                    Settings = new CustomSlotsSettings();
                 }
 
                 SetupLogging(directory);
@@ -53,7 +57,7 @@ namespace HandHeld
                 var harmony = HarmonyInstance.Create("io.github.denadan.CustomFilters");
                 harmony.PatchAll(Assembly.GetExecutingAssembly());
 
-                Logger.Log("Loaded HandHeld v0.1 for bt 1.8");
+                Logger.Log("Loaded CustomSlots v0.1 for bt 1.8");
 
                 CustomComponents.Registry.RegisterSimpleCustomComponents(Assembly.GetExecutingAssembly());
 
@@ -80,30 +84,30 @@ namespace HandHeld
         [Conditional("CCDEBUG")]
         public void LogDebug(string message)
         {
-            Logger.LogDebug(message);
+            Logger.LogDebug(prefix + message);
         }
         [Conditional("CCDEBUG")]
         public void LogDebug(string message, Exception e)
         {
-            Logger.LogDebug(message, e);
+            Logger.LogDebug(prefix + message, e);
         }
 
         public void LogError(string message)
         {
-            Logger.LogError(message);
+            Logger.LogError(prefix + message);
         }
         public void LogError(string message, Exception e)
         {
-            Logger.LogError(message, e);
+            Logger.LogError(prefix + message, e);
         }
         public void LogError(Exception e)
         {
-            Logger.LogError(e);
+            LogError(prefix, e);
         }
 
         public void Log(string message)
         {
-            Logger.Log(message);
+            Logger.Log(prefix + message);
         }
 
 

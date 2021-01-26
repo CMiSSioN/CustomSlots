@@ -5,12 +5,30 @@ using BattleTech;
 using BattleTech.UI;
 using CustomComponents;
 
-namespace HandHeld
+namespace CustomSlots
 {
-    [CustomComponent("SpecialSlot")]
-    public class SpecialInfo : SimpleCustomComponent, IOnInstalled, IOnItemGrabbed, IReplaceValidateDrop, IPreValidateDrop
+    [CustomComponent("SlotInfo", AllowArray = true)]
+    public class CustomSlotInfo : SimpleCustomComponent,
+        IUseSlots,
+        IOnInstalled, IOnItemGrabbed,
+        IReplaceValidateDrop, IPreValidateDrop
     {
-        public int SpecSlotUsed { get; set; } = 1;
+        public int SlotsUsed { get; set; } = 1;
+        public int SupportUsed { get; set; } = 0;
+
+        public string  SlotName { get; set; }
+
+        public virtual int GetSlotsUsed(MechDef mech, IEnumerable<MechComponentRef> inventory)
+        {
+            return SlotsUsed;
+        }
+
+        public virtual int GetSupportUsed(MechDef mech, IEnumerable<MechComponentRef> inventory)
+        {
+            return SupportUsed;
+        }
+
+
         public void OnInstalled(WorkOrderEntry_InstallComponent order, SimGameState state, MechDef mech)
         {
             var max = SpecialControler.SlotsUsed(mech);
@@ -30,12 +48,12 @@ namespace HandHeld
 //            var total = SpecialControler.SlotsTotal(mech);
             var sdef = SpecialControler.GetDefInfo(mech);
 
-            //var used_fixed = mech.Inventory.Where(i => i.IsModuleFixed(mech)).Where(i => i.Is<SpecialInfo>())
-            //    .Sum(i => i.GetComponent<SpecialInfo>().SpecSlotUsed);
+            //var used_fixed = mech.Inventory.Where(i => i.IsModuleFixed(mech)).Where(i => i.Is<CustomSlotInfo>())
+            //    .Sum(i => i.GetComponent<CustomSlotInfo>().SpecSlotUsed);
 
             var installed = mech.Inventory
-                .Where(i => i.Is<SpecialInfo>() && !i.IsModuleFixed(mech))
-                .Select(i => new { item = i, spinfo = i.GetComponent<SpecialInfo>()} ).ToList();
+                .Where(i => i.Is<CustomSlotInfo>() && !i.IsModuleFixed(mech))
+                .Select(i => new { item = i, spinfo = i.GetComponent<CustomSlotInfo>()} ).ToList();
 
             var defaults = installed.Where(i => i.item.IsDefault()).ToList();
             var notdefaults = installed.Where(i => !i.item.IsDefault()).ToList();
@@ -94,8 +112,8 @@ namespace HandHeld
             var mech = location.mechLab.activeMechDef;
             var total = SpecialControler.SlotsTotal(mech);
 
-            var used = mech.Inventory.Where(i => i.IsModuleFixed(mech)).Where(i => i.Is<SpecialInfo>())
-                .Sum(i => i.GetComponent<SpecialInfo>().SpecSlotUsed);
+            var used = mech.Inventory.Where(i => i.IsModuleFixed(mech)).Where(i => i.Is<CustomSlotInfo>())
+                .Sum(i => i.GetComponent<CustomSlotInfo>().SpecSlotUsed);
 
             if (total < SpecSlotUsed + used)
                 return string.Format(Control.Instance.Settings.NotEnoughSpecialSlots, Def.Description.Name);

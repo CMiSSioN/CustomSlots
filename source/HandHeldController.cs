@@ -8,7 +8,7 @@ using BattleTech.UI;
 using CustomComponents;
 using Localize;
 
-namespace HandHeld
+namespace CustomSlots
 {
     public static class HandHeldController
     {

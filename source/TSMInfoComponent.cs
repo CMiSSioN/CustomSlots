@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using BattleTech;
 
-namespace HandHeld
+namespace CustomSlots
 {
     [CustomComponent("TSMInfo")]
     public class TSMInfoComponent : SimpleCustomComponent
