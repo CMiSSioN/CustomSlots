@@ -76,9 +76,7 @@ namespace CustomSlots
             {
                 Descriptor = source.Descriptor;
 
-                defid = slot_ovveride.Default == null
-                    ? source.Descriptor.DefaultItem
-                    : slot_ovveride.Default;
+                defid = slot_ovveride.Default ?? source.Descriptor.DefaultItem;
             }
 
 

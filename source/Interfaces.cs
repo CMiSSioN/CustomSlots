@@ -20,6 +20,14 @@ namespace CustomSlots
         public int GetSupportUsed(MechDef mech, IEnumerable<MechComponentRef> inventory);
     }
 
+    public interface ISlotSupport
+    {
+        public string SlotName { get; }
+        public ChassisLocations Location { get; }
+        public int GetSupportAdd(MechDef mech, IEnumerable<MechComponentRef> inventory);
+
+    }
+
    
 
 

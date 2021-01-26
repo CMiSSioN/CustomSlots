@@ -12,88 +12,201 @@ namespace CustomSlots
 
     public static class CustomSlotControler
     {
+
+
+        public static readonly ChassisLocations[] all_locations = new ChassisLocations[]
+        {
+            ChassisLocations.LeftArm,
+            ChassisLocations.RightArm,
+            ChassisLocations.Head,
+            ChassisLocations.LeftTorso,
+            ChassisLocations.RightTorso,
+            ChassisLocations.CenterTorso,
+            ChassisLocations.LeftLeg,
+            ChassisLocations.RightLeg
+        };
+
         public class defrecord
         {
             public MechComponentRef item;
             public CustomSlotInfo si;
         }
 
+        public static bool IsSupport(this MechComponentRef item, string slotname)
+        {
+            var items = item.GetComponents<ISlotSupport>();
+            return items?.FirstOrDefault(i => i.SlotName == slotname) != null;
+        }
+        public static bool IsSupport(this MechComponentDef item, string slotname)
+        {
+            var items = item.GetComponents<ISlotSupport>();
+            return items?.FirstOrDefault(i => i.SlotName == slotname) != null;
+        }
+
+        public static bool IsSupport(this MechComponentRef item, string slotname, out ISlotSupport support)
+        {
+            var items = item.GetComponents<ISlotSupport>();
+
+            support = items?.FirstOrDefault(i => i.SlotName == slotname);
+
+            return support != null;
+        }
+        public static bool IsSupport(this MechComponentDef item, string slotname, out ISlotSupport support)
+        {
+            var items = item.GetComponents<ISlotSupport>();
+
+            support = items?.FirstOrDefault(i => i.SlotName == slotname);
+
+            return support != null;
+        }
+
         //for patching
-        public static ISlotsOverride GetSlotsOverride(MechDef mech, string type)
+        public static ISlotsOverride GetSlotsOverride(this MechDef mech, string type)
         {
             var customs = mech.GetComponents<ISlotsOverride>();
-            if (customs != null)
-                return customs.FirstOrDefault(i => i.SlotName == type);
-            
-            return null;
-
+            return customs?.FirstOrDefault(i => i.SlotName == type);
         }
 
-        public static int SlotsTotal(MechDef mech, IEnumerable<MechComponentRef> inventory = null)
+        public static bool IsSlot(this MechComponentRef item, string slotname, out IUseSlots result)
         {
-            var sdef = GetDefInfo(mech);
-            var slotinfo = Control.Instance.Settings.GetSpSlotInfo(mech);
-            
-            var count = slotinfo == null ? 0 : slotinfo.SpecialSlotCount;
-            if (sdef != null && sdef.MaxSlots >= 0)
-                count = sdef.MaxSlots;
-            return count;
+            return item.Is<IUseSlots>(out result) && result.SlotName == slotname;
+        }
+        public static bool IsSlot(this MechComponentDef item, string slotname, out IUseSlots result)
+        {
+            return item.Is<IUseSlots>(out result) && result.SlotName == slotname;
         }
 
-        public static int SlotsUsed(MechDef mech, IEnumerable<MechComponentRef> inventory = null)
+        public static bool IsSlot(this MechComponentRef item, string slotname)
         {
-            if (inventory == null)
-                inventory = mech.Inventory;
+            return item.Is<IUseSlots>(out var result) && result.SlotName == slotname;
+        }
+        public static bool IsSlot(this MechComponentDef item, string slotname)
+        {
+            return item.Is<IUseSlots>(out var result) && result.SlotName == slotname;
+        }
 
-            int used = 0;
-            foreach (var item in inventory)
+        public static int Supports(this MechDef mech, string slotname, ChassisLocations location)
+        {
+            int num = 0;
+
+            foreach (var item in mech.Inventory)
             {
-                if (item.Is<IUseSlots>(out var s))
-                    used += s.GetSlotsUsed(mech, inventory);
+                if(item.IsSupport(slotname, out var support))
+                    if (support.Location.HasFlag(location) ||
+                        (support.Location == ChassisLocations.None && item.MountedLocation == location))
+                        num += support.GetSupportAdd(mech, mech.Inventory);
             }
 
-            return used;
+            return num;
+
         }
+
 
         internal static void AutoFixMech(List<MechDef> mechDefs, SimGameState simgame)
         {
             foreach (var mechDef in mechDefs)
             {
-                var sdef = GetDefInfo(mechDef);
-                var count = SlotsTotal(mechDef);
-                int used = SlotsUsed(mechDef);
-
-
-                if (used != count)
-                {
-                    AdjustDefaults(mechDef, simgame, count, sdef);
-                }
+                AdjustDefaults(mechDef, simgame, true);
             }
         }
 
-        public static void AdjustDefaults(MechDef mechDef, SimGameState simgame, int max, ISpecialSlotDefaults sdef)
+        private static void AdjustDefaults(MechDef mechDef, SimGameState simgame, bool with_empty_locations = false)
+        {
+            foreach (var slotType in Control.Instance.Settings.SlotTypes)
+            {
+                AdjustDefaults(mechDef, simgame, slotType.SlotName, true);
+            }
+        }
+
+        private static void AdjustDefaults(MechDef mechDef, SimGameState simgame, string slotName, bool with_empty_locations = false)
+        {
+            var sinfo = SlotsInfoDatabase.GetMechInfoByType(mechDef, slotName);
+            AdjustDefaults(mechDef, simgame, slotName, sinfo, with_empty_locations);
+        }
+
+        private static void AdjustDefaults(MechDef mechDef, SimGameState simgame, string slotName, SlotDescriptor sinfo, bool with_empty_locations)
         {
             var inventory = mechDef.Inventory.ToList();
-
-            inventory.RemoveAll(i => i.IsDefault() && i.Is<CustomSlotInfo>());
-            var defaults = GetDefaults(mechDef, simgame, sdef);
-            int used = SlotsUsed(mechDef, inventory);
-
-            int n = 0;
-            while (used < max)
+            var changed = false;
+            foreach (var location in all_locations)
             {
-                while (max - used < defaults[n].si.SpecSlotUsed)
-                    n += 1;
-                DefaultHelper.AddInventory(defaults[n].item.ComponentDefID, mechDef, ChassisLocations.CenterTorso, 
-                    defaults[n].item.ComponentDefType, simgame);
-                used += defaults[n].si.SpecSlotUsed;
+                var loc = sinfo?[location];
+                if (loc != null || with_empty_locations)
+                {
+                    int max_slots = loc?.SlotCount ?? 0;
+                    int used_slt_def = 0;
+                    int used_slt_oth = 0;
 
-                if (n + 1 < defaults.Count)
-                    n += 1;
+                    int max_support = mechDef.Supports(slotName, location);
+                    int used_sup_def = 0;
+                    int used_sup_oth = 0;
+                    List<MechComponentRef> defaults = new List<MechComponentRef>();
+
+                    foreach (var item in inventory.Where(i => i.MountedLocation == location))
+                    {
+                        if (item.IsSlot(slotName, out var slot))
+                        {
+                            var isDefault = item.IsDefault();
+                            var used_slots = slot.GetSlotsUsed(mechDef, inventory);
+
+
+                            if (isDefault)
+                            {
+                                used_slt_def += used_slots;
+                                defaults.Add(item);
+                            }
+                            else
+                                used_slt_oth += used_slots;
+
+                            if (sinfo.Descriptor.HaveSupports)
+                            {
+                                var used_support = slot.GetSupportUsed(mechDef, inventory);
+                                if (isDefault)
+                                    used_sup_def += used_support;
+                                else
+                                    used_sup_oth += used_support;
+                            }
+                        }
+                    }
+
+                    var used_total = used_slt_def + used_slt_oth;
+                    var need_fix = used_total < max_slots || used_total > max_slots && used_slt_def > 0 ||
+                                   !Control.Instance.Settings.CheckOnlyDefaultCountInAutofix && used_slt_def > 0;
+
+                }
             }
 
-            mechDef.SetInventory(inventory.ToArray());
+            if (changed)
+                mechDef.SetInventory(inventory.ToArray());
         }
+
+        private static void AdjustDefaults(MechDef mechDef, SimGameState simgame, string slotName, SlotDescriptor sinfo, SlotDescriptor.location_info loc)
+        {
+        }
+
+        //public static void AdjustDefaults(MechDef mechDef, SimGameState simgame, int max, ISpecialSlotDefaults sdef)
+        //{
+        //    var inventory = mechDef.Inventory.ToList();
+
+        //    inventory.RemoveAll(i => i.IsDefault() && i.Is<CustomSlotInfo>());
+        //    var defaults = GetDefaults(mechDef, simgame, sdef);
+        //    int used = SlotsUsed(mechDef, inventory);
+
+        //    int n = 0;
+        //    while (used < max)
+        //    {
+        //        while (max - used < defaults[n].si.SpecSlotUsed)
+        //            n += 1;
+        //        DefaultHelper.AddInventory(defaults[n].item.ComponentDefID, mechDef, ChassisLocations.CenterTorso,
+        //            defaults[n].item.ComponentDefType, simgame);
+        //        used += defaults[n].si.SpecSlotUsed;
+
+        //        if (n + 1 < defaults.Count)
+        //            n += 1;
+        //    }
+
+        //    mechDef.SetInventory(inventory.ToArray());
+        //}
 
         internal static void ClearInventory(MechDef mech, List<MechComponentRef> result, SimGameState simgame)
         {
@@ -108,7 +221,7 @@ namespace CustomSlots
 
             result.RemoveAll(i => i.IsDefault() && i.Is<CustomSlotInfo>());
             var defaults = GetDefaults(mech, simgame, sdef);
- 
+
             int n = 0;
             while (used < max)
             {
@@ -165,8 +278,8 @@ namespace CustomSlots
                 foreach (var record in sdef.Defaults)
                 {
                     var item = DefaultHelper.CreateRef(record.id, record.type, dm, sim);
-                    if(item != null && item.Is<CustomSlotInfo>(out var si))
-                        result.Add(new defrecord() {item = item, si =  si});
+                    if (item != null && item.Is<CustomSlotInfo>(out var si))
+                        result.Add(new defrecord() { item = item, si = si });
                 }
 
             var id = (sdef == null || string.IsNullOrEmpty(sdef.DefaultSlotId))
@@ -176,7 +289,8 @@ namespace CustomSlots
 
             var def = DefaultHelper.CreateRef(id, ComponentType.Upgrade, dm,
                 sim);
-            result.Add(new defrecord() { 
+            result.Add(new defrecord()
+            {
                 item = def,
                 si = def.GetComponent<CustomSlotInfo>()
             });
@@ -188,7 +302,7 @@ namespace CustomSlots
         {
             var count = SlotsTotal(mechdef);
             int used = SlotsUsed(mechdef);
-            if(used != count)
+            if (used != count)
                 errors[MechValidationType.InvalidInventorySlots].Add(new Text(Control.Instance.Settings.SpecialSlotError));
         }
 

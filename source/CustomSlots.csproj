@@ -106,6 +106,7 @@
   <ItemGroup>
     <Compile Include="CarryWeightTools.cs" />
     <Compile Include="Control.cs" />
+    <Compile Include="CustomSlotSupport.cs" />
     <Compile Include="HandHeldDefault.cs" />
     <Compile Include="HandHeldController.cs" />
     <Compile Include="HandHeldInfo.cs" />

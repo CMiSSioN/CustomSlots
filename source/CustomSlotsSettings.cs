@@ -75,9 +75,10 @@ namespace CustomSlots
         public int MaxSpecials = 2;
         public bool MultiplicativeTonnageFactor = true;
 
-        public bool UseHandTag = true;
-        public string HandsItemTag = "Hand";
 
+        public bool RunAutofixer = true;
+        public bool CheckOnlyDefaultCountInAutofix = true;
+        
         public string SpecialSlotError = "Wrong Special slot configuration, remove excess equipment or repackage mech";
         public string NotEnoughSpecialSlots = "Not enough space to install {0}";
 
