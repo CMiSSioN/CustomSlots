@@ -18,12 +18,12 @@ namespace CustomSlots
 
         public string  SlotName { get; set; }
 
-        public virtual int GetSlotsUsed(MechDef mech, IEnumerable<MechComponentRef> inventory)
+        public virtual int GetSlotsUsed(MechDef mech, IEnumerable<inventory_item> inventory)
         {
             return SlotsUsed;
         }
 
-        public virtual int GetSupportUsed(MechDef mech, IEnumerable<MechComponentRef> inventory)
+        public virtual int GetSupportUsed(MechDef mech, IEnumerable<inventory_item> inventory)
         {
             return SupportUsed;
         }

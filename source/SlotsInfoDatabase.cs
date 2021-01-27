@@ -14,7 +14,7 @@ namespace CustomSlots
             public class def_info
             {
                 public MechComponentDef item;
-                public CustomSlotInfo info;
+                public IUseSlots info;
             }
 
             public ChassisLocations Location { get; set; }
@@ -70,7 +70,7 @@ namespace CustomSlots
             if (source == null)
             {
                 defid = slot_ovveride.Default;
-                Descriptor = null;
+                Descriptor = Control.Instance.Settings.SlotTypes.FirstOrDefault(i => i.SlotName == slot_ovveride.SlotName);
             }
             else
             {
@@ -99,7 +99,7 @@ namespace CustomSlots
                             SlotCount = Locations.Count,
                         };
                         var defs = new List<location_info.def_info>();
-                        for(int i =0; i<locationInfo.Defaults.Length - 1; i++ )
+                        for (int i = 0; i < locationInfo.Defaults.Length - 1; i++)
                             defs.Add(locationInfo.Defaults[i]);
                         add_to_defs(defs, defid);
                         l.Defaults = defs.ToArray();
@@ -183,7 +183,7 @@ namespace CustomSlots
                     return null;
             }
 
-            var csi = item.GetComponent<CustomSlotInfo>();
+            var csi = item.GetComponent<IUseSlots>();
             if (csi == null)
             {
                 Control.Instance.LogError($"{def.id} not slot item, cannot be used as default!");

@@ -106,11 +106,10 @@
   <ItemGroup>
     <Compile Include="CarryWeightTools.cs" />
     <Compile Include="Control.cs" />
+    <Compile Include="CustomSlotControler.Extentions.cs" />
     <Compile Include="CustomSlotSupport.cs" />
-    <Compile Include="HandHeldDefault.cs" />
-    <Compile Include="HandHeldController.cs" />
-    <Compile Include="HandHeldInfo.cs" />
     <Compile Include="CustomSlotsSettings.cs" />
+    <Compile Include="DinamicCustoms.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="Patches\MechLabStatBlockWidget_SetData.cs" />
     <Compile Include="Patches\MechPropertiesWidget_Setup.cs" />

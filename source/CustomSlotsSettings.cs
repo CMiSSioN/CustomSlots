@@ -77,7 +77,7 @@ namespace CustomSlots
 
 
         public bool RunAutofixer = true;
-        public bool CheckOnlyDefaultCountInAutofix = true;
+        public bool QuickAutofix = true;
         
         public string SpecialSlotError = "Wrong Special slot configuration, remove excess equipment or repackage mech";
         public string NotEnoughSpecialSlots = "Not enough space to install {0}";
