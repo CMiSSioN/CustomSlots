@@ -133,23 +133,27 @@ namespace CustomSlots
 
                             need_fix = need_fix || total_support < used_support;
                         }
+
                         if (!need_fix)
                             continue;
                     }
 
-                    AdjuctMechDefaults(mechDef, simgame, slotType.SlotName);
+                    var inv = mechDef.Inventory.ToList();
+
+                    AdjustMechDefaults(mechDef, simgame, slotType.SlotName, inv);
+                    mechDef.SetInventory(inv.ToArray());
                 }
             }
         }
 
-        public static void AdjuctMechDefaults(MechDef mechDef, SimGameState simgame)
+        public static void AdjustMechDefaults(MechDef mechDef, SimGameState simgame, List<MechComponentRef> inventory)
         {
             foreach (var slotType in Control.Instance.Settings.SlotTypes)
-                AdjuctMechDefaults(mechDef, simgame, slotType.SlotName);
+                AdjustMechDefaults(mechDef, simgame, slotType.SlotName, inventory);
 
         }
 
-        public static void AdjuctMechDefaults(MechDef mechDef, SimGameState simGame, string slotname)
+        public static void AdjustMechDefaults(MechDef mechDef, SimGameState simGame, string slotname, List<MechComponentRef> inventory)
         {
             var slotType = Control.Instance.Settings.SlotTypes.FirstOrDefault(i => i.SlotName == slotname);
             if (slotType == null)
@@ -158,7 +162,6 @@ namespace CustomSlots
             var sinfo = SlotsInfoDatabase.GetMechInfoByType(mechDef, slotType.SlotName);
 
 
-            var inventory = mechDef.Inventory.ToList();
             var dinamics = inventory
                 .Where(i => i.IsDefault() && i.IsSlot(slotType.SlotName) && i.Is<CustomSlotDynamic>())
                 .ToList();
@@ -220,7 +223,7 @@ namespace CustomSlots
                     free -= use_slot;
                     free_support -= use_sup;
                     var item = DefaultHelper.CreateRef(def.item.Description.Id, def.item.ComponentType,
-                        UnityGameInstance.BattleTechGame.DataManager, simgame);
+                        UnityGameInstance.BattleTechGame.DataManager, simGame);
                     item.SetData(location.Location, 0, ComponentDamageLevel.Functional, true);
                     inventory.Add(item);
 
@@ -229,8 +232,6 @@ namespace CustomSlots
                 }
 
             }
-
-            mechDef.SetInventory(inventory.ToArray());
         }
 
 
@@ -240,6 +241,8 @@ namespace CustomSlots
                 return;
 
             result.RemoveAll(i => i.Is<CustomSlotInfo>() && !i.IsFixed);
+
+            AdjustMechDefaults(mech, simgame, result);
         }
 
         internal static void AdjustDefaultsMechlab(MechLabPanel mechLab)
@@ -277,42 +280,14 @@ namespace CustomSlots
             }
         }
 
-        public static List<defrecord> GetDefaults(MechDef mech, SimGameState sim, ISpecialSlotDefaults sdef)
-        {
-            var result = new List<defrecord>();
-            var dm = UnityGameInstance.BattleTechGame.DataManager;
-
-            if (sdef != null && sdef.Defaults != null && sdef.Defaults.Length > 0)
-                foreach (var record in sdef.Defaults)
-                {
-                    var item = DefaultHelper.CreateRef(record.id, record.type, dm, sim);
-                    if (item != null && item.Is<CustomSlotInfo>(out var si))
-                        result.Add(new defrecord() { item = item, si = si });
-                }
-
-            var id = (sdef == null || string.IsNullOrEmpty(sdef.DefaultSlotId))
-                ? Control.Instance.Settings.SpecialDefaultSlotID
-                : sdef.DefaultSlotId;
-
-
-            var def = DefaultHelper.CreateRef(id, ComponentType.Upgrade, dm,
-                sim);
-            result.Add(new defrecord()
-            {
-                item = def,
-                si = def.GetComponent<CustomSlotInfo>()
-            });
-            return result;
-        }
-
         public static void ValidateMech(Dictionary<MechValidationType, List<Text>> errors,
             MechValidationLevel validationlevel, MechDef mechdef)
         {
-            var count = SlotsTotal(mechdef);
-            int used = SlotsUsed(mechdef);
-            if (used != count)
-                errors[MechValidationType.InvalidInventorySlots]
-                    .Add(new Text(Control.Instance.Settings.SpecialSlotError));
+            var info = SlotsInfoDatabase.GetMechInfo(mechdef);
+            foreach (var slotTypeDescriptor in Control.Instance.Settings.SlotTypes)
+            {
+                
+            }
         }
 
         public static bool CanBeFielded(MechDef mechdef)
