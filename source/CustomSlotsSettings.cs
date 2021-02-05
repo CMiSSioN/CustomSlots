@@ -34,6 +34,9 @@ namespace CustomSlots
         public string SlotName { get; set; }
         public bool HaveSupports { get; set; } = false;
 
+        public string SlotsErrorName { get; set; } = "Slots";
+        public string SupportsErrorName { get; set; } = "Supports";
+
         public string AvaliableColor { get; set; } = "green";
         public string BlockedColor { get; set; } = "yellow";
 
@@ -78,17 +81,10 @@ namespace CustomSlots
 
         public bool RunAutofixer = true;
         public bool QuickAutofix = true;
-        
-        public string SpecialSlotError = "Wrong Special slot configuration, remove excess equipment or repackage mech";
-        public string NotEnoughSpecialSlots = "Not enough space to install {0}";
 
-        public string TwoHandMissed = "Mech need two free hand actuators to use {0}";
-        public string OneHandMissed = "Mech need one free hand actuators to use {0}";
-        public string ValidateHands = "Mech need {0} hand actuators to use installed hand helds";
-        public string ValidateTonnage = "Mech need {0:0.00}t more carry weight to use installed hand helds";
-
-        public string WrongWeightMessage = "{0} weight {1:0.00}t, mech can carry up to {2:0.00}t items";
-        public string WrongWeightMessage1H = "{0} weight {1:0.00}t, mech can carry up to {2:0.00}t items in one hand";
+        public string ErrorNotEnoughSlots = "Not enough {0} installed  in {1}, try repackage mech to fix";
+        public string ErrorTooManySlots = "Too many {0} installed  in {1}";
+        public string ErrorNotEnoughSupport = "Need more {0) for installed equipment in {1}";
 
         public string LocationLabel = "HandHeld {0:0.00}/{1:0.00}t";
 

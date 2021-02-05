@@ -70,19 +70,21 @@ namespace CustomSlots
                 return 0;
 
             var slots = inventory
-                .Select(i => new { loc = i.location, slot = i.item.GetComponent<CustomSlotInfo>() })
+                .Select(i => new { loc = i.location, slot = i.item.GetComponent<IUseSlots>() })
                 .Where(i => i.slot != null && i.slot.SlotName == slotname)
+                .GroupBy(i => i.loc)
                 .Select(i => new
-                { loc = i.loc, count = i.slot.GetSlotsUsed(mech, inventory), sort = i.loc == target ? 1 : 0 })
+                { loc = i.Key, count = i.Sum(i => i.slot.GetSupportUsed(mech, inventory)), sort = i.Key == target ? 1 : 0 })
                 .Where(i => i.count > 0)
                 .OrderBy(i => i.sort).ToList();
 
             foreach (var slot in slots)
             {
                 int used = slot.count;
-                while (used > 0)
+
+                for (int i = 0; i < supports.Count; i++)
                 {
-                    for (int i = 0; i < supports.Count; i++)
+                    while (used > 0 && i < supports.Count)
                         if (supports[i].location.HasFlag(slot.loc))
                             if (used >= supports[i].count)
                             {
@@ -95,7 +97,13 @@ namespace CustomSlots
                                 supports[i] = new { count = t.count - used, location = t.location, sort = t.sort };
                                 used = 0;
                             }
+
+                    if (used == 0)
+                        break;
                 }
+
+                if (used > 0 && slot.sort == 1)
+                    return -used;
             }
 
             return supports.Where(i => i.sort >= 2).Sum(i => i.count);
@@ -198,7 +206,7 @@ namespace CustomSlots
                     continue;
 
                 var free_support_location = 0;
-                if (free_support > 0)
+                if (slotType.HaveSupports)
                 {
                     free_support_location = GetSupportsForLocation(mechDef, slotType.SlotName, location.Location,
                         inventory.ToInventory());
@@ -215,13 +223,13 @@ namespace CustomSlots
                         def = location.Defaults[n];
                         use_slot = def.info.GetSlotsUsed(mechDef);
                         use_sup = def.info.GetSupportUsed(mechDef);
-                        if (use_slot <= free && use_sup <= free_support)
+                        if (use_slot <= free && use_sup <= free_support_location)
                             break;
                         n++;
                     }
 
                     free -= use_slot;
-                    free_support -= use_sup;
+                    free_support_location -= use_sup;
                     var item = DefaultHelper.CreateRef(def.item.Description.Id, def.item.ComponentType,
                         UnityGameInstance.BattleTechGame.DataManager, simGame);
                     item.SetData(location.Location, 0, ComponentDamageLevel.Functional, true);
@@ -283,19 +291,85 @@ namespace CustomSlots
         public static void ValidateMech(Dictionary<MechValidationType, List<Text>> errors,
             MechValidationLevel validationlevel, MechDef mechdef)
         {
+            var s = Control.Instance.Settings;
             var info = SlotsInfoDatabase.GetMechInfo(mechdef);
             foreach (var slotTypeDescriptor in Control.Instance.Settings.SlotTypes)
             {
-                
+                var slots = mechdef.Inventory
+                    .Select(i => new { location = i.MountedLocation, slot = i.GetComponent<IUseSlots>() })
+                    .Where(i => i.slot != null && i.slot.SlotName == slotTypeDescriptor.SlotName)
+                    .GroupBy(i => i.location)
+                    .Select(i => new
+                    {
+                        location = i.Key,
+                        slots = i.Sum(s => s.slot.GetSlotsUsed(mechdef, mechdef.Inventory.ToInventory())),
+                        supports = i.Sum(s => s.slot.GetSupportUsed(mechdef, mechdef.Inventory.ToInventory()))
+                    })
+                    .ToList();
+
+                var slot_info = info[slotTypeDescriptor.SlotName];
+                foreach (var linfo in all_locations.Select(i => slot_info[i]).Where(i => i != null))
+                {
+                    var slot = slots.FirstOrDefault(i => i.location == linfo.Location);
+                    int slot_num = slot?.slots ?? 0;
+                    if (slot_num != linfo.SlotCount)
+                        errors[MechValidationType.InvalidInventorySlots].Add(linfo.SlotCount < slot_num
+                            ? new Text(s.ErrorTooManySlots, slotTypeDescriptor.SlotsErrorName, linfo.Location)
+                            : new Text(s.ErrorNotEnoughSlots, slotTypeDescriptor.SlotsErrorName, linfo.Location));
+                    if (slotTypeDescriptor.HaveSupports)
+                    {
+                        int num_sup = slot?.supports ?? 0;
+                        if (num_sup > 0)
+                        {
+                            var free_sup = GetSupportsForLocation(mechdef, slotTypeDescriptor.SlotName, linfo.Location);
+                            if (free_sup < 0)
+                                errors[MechValidationType.InvalidInventorySlots]
+                                    .Add(new Text(s.ErrorNotEnoughSupport, slotTypeDescriptor.SupportsErrorName, linfo.Location));
+                        }
+                    }
+                }
             }
         }
 
         public static bool CanBeFielded(MechDef mechdef)
         {
-            var count = SlotsTotal(mechdef);
-            int used = SlotsUsed(mechdef);
+            var info = SlotsInfoDatabase.GetMechInfo(mechdef);
+            foreach (var slotTypeDescriptor in Control.Instance.Settings.SlotTypes)
+            {
+                var slots = mechdef.Inventory
+                    .Select(i => new { location = i.MountedLocation, slot = i.GetComponent<IUseSlots>() })
+                    .Where(i => i.slot != null && i.slot.SlotName == slotTypeDescriptor.SlotName)
+                    .GroupBy(i => i.location)
+                    .Select(i => new
+                    {
+                        location = i.Key,
+                        slots = i.Sum(s => s.slot.GetSlotsUsed(mechdef, mechdef.Inventory.ToInventory())),
+                        supports = i.Sum(s => s.slot.GetSupportUsed(mechdef, mechdef.Inventory.ToInventory()))
+                    })
+                    .ToList();
 
-            return count == used;
+                var slot_info = info[slotTypeDescriptor.SlotName];
+                foreach (var linfo in all_locations.Select(i => slot_info[i]).Where(i => i != null))
+                {
+                    var slot = slots.FirstOrDefault(i => i.location == linfo.Location);
+                    int slot_num = slot?.slots ?? 0;
+                    if (slot_num != linfo.SlotCount)
+                        return false;
+
+                    if (slotTypeDescriptor.HaveSupports)
+                    {
+                        int num_sup = slot?.supports ?? 0;
+                        if (num_sup > 0)
+                        {
+                            var free_sup = GetSupportsForLocation(mechdef, slotTypeDescriptor.SlotName, linfo.Location);
+                            if (free_sup < 0)
+                                return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
         }
     }
 }
