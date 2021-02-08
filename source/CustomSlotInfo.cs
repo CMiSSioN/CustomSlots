@@ -28,18 +28,28 @@ namespace CustomSlots
             return SupportUsed;
         }
 
-
-        public void OnInstalled(WorkOrderEntry_InstallComponent order, SimGameState state, MechDef mech)
+        public virtual int GetSlotsUsed(MechDef mech)
         {
-            var max = CustomSlotControler.SlotsUsed(mech);
-            var sdef = CustomSlotControler.GetDefInfo(mech);
-
-            CustomSlotControler.AdjustDefaults(mech, state, max, sdef);
+            return SlotsUsed;
         }
 
-        public void OnItemGrabbed(IMechLabDraggableItem item, MechLabPanel mechLab, MechLabLocationWidget widget)
+        public virtual int GetSupportUsed(MechDef mech)
         {
-            CustomSlotControler.AdjustDefaultsMechlab(mechLab);
+            return SupportUsed;
+        }
+
+
+        public virtual void OnInstalled(WorkOrderEntry_InstallComponent order, SimGameState state, MechDef mech)
+        {
+
+            var inventory = mech.Inventory.ToList();
+            CustomSlotControler.AdjustMechDefaults(mech, state, SlotName, inventory);
+            mech.SetInventory(inventory.ToArray());
+        }
+
+        public virtual void OnItemGrabbed(IMechLabDraggableItem item, MechLabPanel mechLab, MechLabLocationWidget widget)
+        {
+            CustomSlotControler.AdjustDefaultsMechlab(mechLab, widget);
         }
 
         public string ReplaceValidateDrop(MechLabItemSlotElement drop_item, LocationHelper location, List<IChange> changes)

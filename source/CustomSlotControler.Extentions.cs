@@ -117,5 +117,11 @@ namespace CustomSlots
             return item.Is<IUseSlots>(out var result) && result.SlotName == slotname;
         }
 
+        public static IEnumerable<IUseSlots> AllSlots(this IEnumerable<MechComponentRef> inv, string slotname)
+        {
+            return inv.Select(i => i.GetComponent<IUseSlots>()).Where(i => i?.SlotName == slotname);
+
+        }
+
     }
 }

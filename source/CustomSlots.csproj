@@ -121,6 +121,7 @@
     <Compile Include="CustomSlotControler.cs" />
     <Compile Include="SlotsOverride.cs" />
     <Compile Include="CustomSlotInfo.cs" />
+    <Compile Include="SlotTypeDescriptor.cs" />
     <Compile Include="TSMInfoComponent.cs" />
   </ItemGroup>
   <ItemGroup>

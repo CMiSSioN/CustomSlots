@@ -1,5 +1,6 @@
 ﻿using BattleTech;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using BattleTech.Data;
@@ -7,7 +8,7 @@ using CustomComponents;
 
 namespace CustomSlots
 {
-    public class SlotDescriptor
+    public class SlotDescriptor : IEnumerable<SlotDescriptor.location_info>
     {
         public class location_info
         {
@@ -125,6 +126,16 @@ namespace CustomSlots
                     Locations.Add(l);
                 }
             }
+        }
+
+        public IEnumerator<location_info> GetEnumerator()
+        {
+            return Locations.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return Locations.GetEnumerator();
         }
     }
 

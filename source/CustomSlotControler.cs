@@ -253,7 +253,7 @@ namespace CustomSlots
             AdjustMechDefaults(mech, simgame, result);
         }
 
-        internal static void AdjustDefaultsMechlab(MechLabPanel mechLab)
+        internal static void AdjustDefaultsMechlab(MechLabPanel mechLab, MechLabLocationWidget widget)
         {
             var helper = new MechLabHelper(mechLab);
             var mech = mechLab.activeMechDef;
