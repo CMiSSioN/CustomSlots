@@ -107,14 +107,94 @@ namespace CustomSlots
             }
 
             return supports.Where(i => i.sort >= 2).Sum(i => i.count);
-
         }
 
+        public class extention_record
+        {
+            public string id { get; set; }
+            public int need { get; set; }
+            public int have { get; set; }
+        }
+
+        public class free_record
+        {
+            public ChassisLocations location { get; set; }
+            public int free_slots { get; set; }
+            public int free_supports { get; set; }
+        }
+
+        public static Dictionary<ChassisLocations, free_record> get_free_slots(MechDef mech, ChassisLocations base_location, bool use_support, string SlotName)
+        {
+            var result = new Dictionary<ChassisLocations, free_record>();
+            var info = SlotsInfoDatabase.GetMechInfoByType(mech, SlotName);
+
+            foreach (var linfo in info)
+            {
+
+
+                result[linfo.Location] = new free_record
+                {
+                    location = linfo.Location,
+                    free_slots = linfo.SlotCount,
+                    free_supports = use_support ? CustomSlotControler.GetSupportsForLocation(mech, SlotName, linfo.Location) : 0
+                };
+            }
+
+            var slots = mech.Inventory
+                .Select(i => new { item = i, s = i.GetComponent<IUseSlots>() })
+                .Where(i => i.s?.SlotName == SlotName)
+                .Where(i => !i.item.IsDefault() || i.item.Is<CustomSlotExtention>());
+
+            foreach (var item in slots)
+                if (result.TryGetValue(item.item.MountedLocation, out var record))
+                    record.free_slots -= item.s.GetSlotsUsed(mech);
+
+            return result;
+        }
+
+
+        public static List<extention_record> GetExtentions(MechDef mech,
+            IEnumerable<inventory_item> inventory = null)
+        {
+
+            var inv = inventory == null ? mech.Inventory.ToInventory().ToArray() : inventory.ToArray();
+
+            var result = inv.Select(i => new
+                {
+                    din = i.item.GetComponent<CustomSlotDynamic>(),
+                    ext = i.item.GetComponent<CustomSlotExtention>()
+                })
+                .Where(i => i.din != null || i.ext != null)
+                .Select(i => new extention_record
+                {
+                    id = i.din == null ? i.ext.Def.Description.Id : i.din.ExtentionID,
+                    need = i.ext == null ? 0 : 1,
+                    have = i.din == null ? 0 : i.din.ExtentionCount(mech, inv)
+                })
+                .GroupBy(i => i.id)
+                .Select(i => i.Aggregate(
+                        new extention_record {id = i.Key, have = 0, need = 0},
+                        (total, next) =>
+                        {
+                            total.need += next.need;
+                            total.have += next.need;
+                            return total;
+                        })
+                    )
+                .ToList();
+
+            return result;
+
+        }
 
         internal static void AutoFixMech(List<MechDef> mechDefs, SimGameState simgame)
         {
             foreach (var mechDef in mechDefs)
             {
+                var dinamics = GetExtentions(mechDef);
+                AdjustDynamics(mechDef, dinamics);
+
+
                 foreach (var slotType in Control.Instance.Settings.SlotTypes)
                 {
                     var sinfo = SlotsInfoDatabase.GetMechInfoByType(mechDef, slotType.SlotName);
@@ -154,34 +234,47 @@ namespace CustomSlots
             }
         }
 
-        public static void AdjustMechDefaults(MechDef mechDef, SimGameState simgame, List<MechComponentRef> inventory)
+        private static bool AdjustDynamics(MechDef mechDef, List<extention_record> dinamics, SimGameState simgame,
+            List<MechComponentRef> inv)
         {
+            bool changed = false;
+            foreach (var er in dinamics)
+            {
+                if (er.need == er.have)
+                    continue;
+
+                changed = true;
+                inv.RemoveAll(i => i.ComponentDefID == er.id);
+                foreach (var item in inv.Where(i => i.Is<CustomSlotDynamic>(out var d) && d.ExtentionID == er.id))
+                {
+                    var dinamic = item.GetComponent<CustomSlotDynamic>();
+                    if (dinamic.ExtentionCount(mechDef, inv.ToInventory()) > 0)
+                    {
+
+                    }
+                }
+            }
+
+            return changed;
+        }
+
+        public static bool AdjustMechDefaults(MechDef mechDef, SimGameState simgame, List<MechComponentRef> inventory)
+        {
+
+            var changed = false;
             foreach (var slotType in Control.Instance.Settings.SlotTypes)
-                AdjustMechDefaults(mechDef, simgame, slotType.SlotName, inventory);
+                changed  = AdjustMechDefaults(mechDef, simgame, slotType.SlotName, inventory) && changed;
+            return changed;
 
         }
 
-        public static void AdjustMechDefaults(MechDef mechDef, SimGameState simGame, string slotname, List<MechComponentRef> inventory)
+        public static bool AdjustMechDefaults(MechDef mechDef, SimGameState simGame, string slotname, List<MechComponentRef> inventory)
         {
             var slotType = Control.Instance.Settings.SlotTypes.FirstOrDefault(i => i.SlotName == slotname);
             if (slotType == null)
-                return;
+                return false;
 
             var sinfo = SlotsInfoDatabase.GetMechInfoByType(mechDef, slotType.SlotName);
-
-
-            var dinamics = inventory
-                .Where(i => i.IsDefault() && i.IsSlot(slotType.SlotName) && i.Is<CustomSlotDynamic>())
-                .ToList();
-
-            foreach (var item in dinamics)
-            {
-                var d = item.GetComponent<CustomSlotDynamic>();
-                inventory.Remove(item);
-                inventory.RemoveAll(i => i.ComponentDefID == d.ExtentionID);
-            }
-            inventory.RemoveAll(i => i.IsDefault() && i.IsSlot(slotType.SlotName) && !i.Is<CustomSlotExtention>());
-
             int free_support = 0;
             if (slotType.HaveSupports)
             {
@@ -240,6 +333,8 @@ namespace CustomSlots
                 }
 
             }
+
+            return true;
         }
 
 
@@ -249,7 +344,8 @@ namespace CustomSlots
                 return;
 
             result.RemoveAll(i => i.Is<CustomSlotInfo>() && !i.IsFixed);
-
+            var dinamics = GetExtentions(mech, result.ToInventory());
+            AdjustDynamics(mech, dinamics, simgame, result);
             AdjustMechDefaults(mech, simgame, result);
         }
 
