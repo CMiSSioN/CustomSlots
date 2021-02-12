@@ -21,6 +21,36 @@ namespace CustomSlots
             public ChassisLocations Location { get; set; }
             public int SlotCount { get; set; }
             public def_info[] Defaults;
+
+            public List<def_info> GetDefaults(MechDef mech, IEnumerable<inventory_item> inventory, int free_slots,
+                int free_supps)
+            {
+                List<def_info> result = new List<def_info>();
+
+                int n = 0;
+                while (free_slots > 0)
+                {
+                    def_info item = null;
+                    int used_slots = 0;
+                    int used_supps = 0;
+
+                    do
+                    {
+                        item = Defaults[n];
+                        used_slots = item.info.GetSlotsUsed(mech, inventory);
+                        used_supps = item.info.GetSupportUsed(mech, inventory);
+                        if (n < Defaults.Length - 1)
+                            n += 1;
+                    } while (free_slots - used_slots < 0 || free_supps - used_supps < 0);
+
+                    free_supps -= used_supps;
+                    free_slots -= used_slots;
+                    result.Add(item);
+                }
+
+                return result;
+
+            }
         }
 
         public string UnitType { get; set; }

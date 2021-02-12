@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using BattleTech.UI;
 using CustomComponents;
+using FluffyUnderware.DevTools.Extensions;
 using JetBrains.Annotations;
 using Localize;
 using Steamworks;
@@ -109,6 +110,16 @@ namespace CustomSlots
             return supports.Where(i => i.sort >= 2).Sum(i => i.count);
         }
 
+        public class slot_record
+        {
+            public MechComponentRef item { get; set; }
+            public IUseSlots slot { get; set; }
+            public int slot_used { get; set; }
+            public int sup_used { get; set; }
+            public bool is_default { get; set; }
+        }
+
+
         public class extention_record
         {
             public string id { get; set; }
@@ -160,10 +171,10 @@ namespace CustomSlots
             var inv = inventory == null ? mech.Inventory.ToInventory().ToArray() : inventory.ToArray();
 
             var result = inv.Select(i => new
-                {
-                    din = i.item.GetComponent<CustomSlotDynamic>(),
-                    ext = i.item.GetComponent<CustomSlotExtention>()
-                })
+            {
+                din = i.item.GetComponent<CustomSlotDynamic>(),
+                ext = i.item.GetComponent<CustomSlotExtention>()
+            })
                 .Where(i => i.din != null || i.ext != null)
                 .Select(i => new extention_record
                 {
@@ -173,7 +184,7 @@ namespace CustomSlots
                 })
                 .GroupBy(i => i.id)
                 .Select(i => i.Aggregate(
-                        new extention_record {id = i.Key, have = 0, need = 0},
+                        new extention_record { id = i.Key, have = 0, need = 0 },
                         (total, next) =>
                         {
                             total.need += next.need;
@@ -234,16 +245,18 @@ namespace CustomSlots
             }
         }
 
-        private static bool AdjustDynamics(MechDef mechDef, List<extention_record> dinamics, SimGameState simgame,
+        private static ChassisLocations AdjustDynamics(MechDef mechDef, List<extention_record> dinamics, SimGameState simgame,
             List<MechComponentRef> inv)
         {
-            bool changed = false;
+            ChassisLocations result = ChassisLocations.None;
             foreach (var er in dinamics)
             {
                 if (er.need == er.have)
                     continue;
 
-                changed = true;
+                foreach (var mechComponentRef in inv.Where(i => i.ComponentDefID == er.id))
+                    result.Set(mechComponentRef.MountedLocation);
+
                 inv.RemoveAll(i => i.ComponentDefID == er.id);
                 foreach (var item in inv.Where(i => i.Is<CustomSlotDynamic>(out var d) && d.ExtentionID == er.id))
                 {
@@ -255,7 +268,7 @@ namespace CustomSlots
                 }
             }
 
-            return changed;
+            return result;
         }
 
         public static bool AdjustMechDefaults(MechDef mechDef, SimGameState simgame, List<MechComponentRef> inventory)
@@ -263,7 +276,7 @@ namespace CustomSlots
 
             var changed = false;
             foreach (var slotType in Control.Instance.Settings.SlotTypes)
-                changed  = AdjustMechDefaults(mechDef, simgame, slotType.SlotName, inventory) && changed;
+                changed = AdjustMechDefaults(mechDef, simgame, slotType.SlotName, inventory) && changed;
             return changed;
 
         }
@@ -275,66 +288,123 @@ namespace CustomSlots
                 return false;
 
             var sinfo = SlotsInfoDatabase.GetMechInfoByType(mechDef, slotType.SlotName);
-            int free_support = 0;
-            if (slotType.HaveSupports)
-            {
-                var total_support = mechDef.Supports(slotType.SlotName);
-                var used_support = mechDef.Inventory
-                    .Where(i => i.IsSlot(slotType.SlotName))
-                    .Select(i => i.GetComponent<IUseSlots>())
-                    .Sum(i => i.GetSupportUsed(mechDef, mechDef.Inventory.ToInventory()));
 
-                free_support = total_support - used_support;
+            var slots = inventory.Select(i => new { item = i, slot = i.GetComponent<IUseSlots>() })
+                .Where(i => i.slot != null && i.slot.SlotName == slotname)
+                .Select(i => new slot_record
+                {
+                    item = i.item,
+                    slot = i.slot,
+                    is_default = !i.item.Is<CustomSlotExtention>() && i.item.IsDefault(),
+                    slot_used = i.slot.GetSlotsUsed(mechDef, inventory.ToInventory()),
+                    sup_used = sinfo.Descriptor.HaveSupports ? i.slot.GetSlotsUsed(mechDef, inventory.ToInventory()) : 0
+
+                }).GroupBy(i => i.item.MountedLocation)
+                .ToDictionary(i => i.Key, i => i.ToArray());
+
+            var changed = false;
+
+            foreach (var location in all_locations)
+            {
+                slots.TryGetValue(location, out var sr);
+
+                changed = AdjustMechDefaults(mechDef, simGame, slotname, inventory, location,
+                    sinfo, sr) || changed;
             }
 
-            foreach (var location in all_locations.Select(i => sinfo[i]).Where(i => i != null))
+            return changed;
+        }
+
+        public static bool AdjustMechDefaults(MechDef mechDef, SimGameState simGame, string slotname,
+            List<MechComponentRef> inventory, ChassisLocations location, SlotDescriptor slotinfo, slot_record[] list)
+        {
+            var linfo = slotinfo[location];
+            var used_slots = list?.Sum(i => i.slot_used) ?? 0;
+            var used_defaults = list?.Where(i => i.is_default).Sum(i => i.slot_used) ?? 0;
+
+            var total_slots = linfo?.SlotCount ?? 0;
+
+            //cannot fix
+            if (used_defaults == 0)
+                return false;
+
+            //if remove all defaults will be enough to fix
+            if (used_slots - total_slots >= used_defaults)
             {
-                var max_slots = location.SlotCount;
-                var free = max_slots - mechDef.Inventory
-                    .Where(i => i.MountedLocation == location.Location && i.IsSlot(slotType.SlotName))
-                    .Select(i => i.GetComponent<IUseSlots>())
-                    .Sum(i => i.GetSlotsUsed(mechDef, mechDef.Inventory.ToInventory()));
+                if (used_defaults <= 0) return false;
 
-                if (free <= 0)
-                    continue;
+                foreach (var itemRecord in list.Where(i => i.is_default))
+                    inventory.Remove(itemRecord.item);
+                return true;
+            }
 
-                var free_support_location = 0;
-                if (slotType.HaveSupports)
+            var support = slotinfo.Descriptor.HaveSupports
+                ? GetSupportsForLocation(mechDef, slotname, location, inventory.ToInventory())
+                : 0;
+
+            var defaults = list.Where(i => i.is_default).ToList();
+            var used_sup_defaults = slotinfo.Descriptor.HaveSupports
+                ? defaults.Sum(i => i.sup_used)
+                : 0;
+
+            var need_defaults = linfo.GetDefaults(mechDef, inventory.ToInventory(),
+                total_slots - (used_slots - used_defaults), support + used_sup_defaults);
+
+            bool need_fix = false;
+
+            foreach (var def in need_defaults)
+            {
+                var item = defaults.FirstOrDefault(i => i.item.ComponentDefID == def.item.Description.Id);
+                if (item == null)
                 {
-                    free_support_location = GetSupportsForLocation(mechDef, slotType.SlotName, location.Location,
-                        inventory.ToInventory());
+                    need_fix = true;
+                    break;
                 }
 
-                int n = 0;
-                while (free > 0)
-                {
-                    int use_slot;
-                    int use_sup;
-                    SlotDescriptor.location_info.def_info def;
-                    while (true)
-                    {
-                        def = location.Defaults[n];
-                        use_slot = def.info.GetSlotsUsed(mechDef);
-                        use_sup = def.info.GetSupportUsed(mechDef);
-                        if (use_slot <= free && use_sup <= free_support_location)
-                            break;
-                        n++;
-                    }
+                defaults.Remove(item);
+            }
 
-                    free -= use_slot;
-                    free_support_location -= use_sup;
-                    var item = DefaultHelper.CreateRef(def.item.Description.Id, def.item.ComponentType,
-                        UnityGameInstance.BattleTechGame.DataManager, simGame);
-                    item.SetData(location.Location, 0, ComponentDamageLevel.Functional, true);
-                    inventory.Add(item);
-
-                    if (n + 1 < location.Defaults.Length)
-                        n += 1;
-                }
-
+            if (!need_fix && defaults.Count == 0)
+                return false;
+            foreach (var itemRecord in list.Where(i => i.is_default))
+                inventory.Remove(itemRecord.item);
+            foreach (var needDefault in need_defaults)
+            {
+                var r_item = DefaultHelper.CreateRef(needDefault.item.Description.Id,
+                    needDefault.item.ComponentType, UnityGameInstance.BattleTechGame.DataManager, simGame);
+                r_item.SetData(location, 0 , ComponentDamageLevel.Functional, true);
+                inventory.Add(r_item);
             }
 
             return true;
+
+
+        }
+
+        public static bool AdjustMechDefaults(MechDef mechDef, SimGameState simGame, string slotname,
+            List<MechComponentRef> inventory, ChassisLocations location)
+        {
+            var slotType = Control.Instance.Settings.SlotTypes.FirstOrDefault(i => i.SlotName == slotname);
+            if (slotType == null)
+                return false;
+
+            var sinfo = SlotsInfoDatabase.GetMechInfoByType(mechDef, slotType.SlotName);
+
+            var slots = inventory
+                .Where(i => i.MountedLocation == location)
+                .Select(i => new { item = i, slot = i.GetComponent<IUseSlots>() })
+                .Where(i => i.slot != null && i.slot.SlotName == slotname)
+                .Select(i => new slot_record
+                {
+                    item = i.item,
+                    slot = i.slot,
+                    is_default = !i.item.Is<CustomSlotExtention>() && i.item.IsDefault(),
+                    slot_used = i.slot.GetSlotsUsed(mechDef, inventory.ToInventory()),
+                    sup_used = sinfo.Descriptor.HaveSupports ? i.slot.GetSlotsUsed(mechDef, inventory.ToInventory()) : 0
+
+                }).ToArray();
+
+            return AdjustMechDefaults(mechDef, simGame, slotname, inventory, location, sinfo, slots);
         }
 
 
