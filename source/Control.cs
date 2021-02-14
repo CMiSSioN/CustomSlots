@@ -21,7 +21,7 @@ namespace CustomSlots
 
         private static Control _instance;
 
-        public static Control Instance => _instance ?? (_instance = new Control());
+        public static Control Instance => _instance ??= new Control();
 
 
 
@@ -63,7 +63,7 @@ namespace CustomSlots
 
                 CustomComponents.Validator.RegisterClearInventory(CustomSlotControler.ClearInventory);
 
-                //CustomComponents.Validator.RegisterDropValidator( check: HandHeldController.PostValidator);
+                CustomComponents.Validator.RegisterMechValidator(CarryWeightController.ValidateMech, CarryWeightController.CanBeFielded);
                 CustomComponents.Validator.RegisterMechValidator(CustomSlotControler.ValidateMech, CustomSlotControler.CanBeFielded);
                 if(Settings.RunAutofixer)
                     CustomComponents.AutoFixer.Shared.RegisterMechFixer(CustomSlotControler.AutoFixMech);

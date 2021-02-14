@@ -5,25 +5,29 @@ using MechEngineer.Features.ArmActuators;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Localize;
 using TMPro;
 using UnityEngine;
 
 namespace CustomSlots
 {
-    public static class CarryWeightTools
+    public static class CarryWeightController
     {
         public static TextMeshProUGUI TextElement { get; internal set; }
         public static LocationHelper Location { get; internal set; }
         public static LocationHelper CenterTorso { get; internal set; }
 
-        public static float GetCarryWeight(MechDef mech, IEnumerable<MechComponentRef> inventory)
+        public static float GetCarryWeight(MechDef mech, IEnumerable<MechComponentRef> inventory = null)
         {
+
+            if (inventory == null)
+                inventory = mech.Inventory;
             var tfactor = Control.Instance.Settings.CarryWeightFactor;
             float basetf = 0;
 
             foreach (var item in inventory)
             {
-                if (item.Is<TSMInfoComponent>(out var info))
+                if (item.Is<CarryWeightCustoms>(out var info))
                 {
                     if (Control.Instance.Settings.MultiplicativeTonnageFactor)
                         tfactor *= info.HandHeldFactor;
@@ -55,21 +59,33 @@ namespace CustomSlots
             return Mathf.Ceil(mech.Chassis.Tonnage * tfactor * 100) / 100f + addtonnage;
         }
 
-
-        public static float GetUsedWeight(MechDef mech, IEnumerable<MechComponentRef> inventory)
+        public static float GetUsedWeight(MechDef mech, IEnumerable<MechComponentRef> inventory = null)
         {
+            if (inventory == null)
+                inventory = mech.Inventory;
 
             return inventory.Where(i => i.Is<IUseTonnage>()).Select(i => i.GetComponent<IUseTonnage>())
-                .Sum(i => i.GetTonnage(mech, inventory));
+                .Sum(i => i.GetTonnage(mech, inventory.ToInventory()));
 
         }
 
-        public static int NumOfHands(MechDef mech, IEnumerable<MechComponentRef> inventory)
+        public static void ValidateMech(Dictionary<MechValidationType, List<Text>> errors, MechValidationLevel validationlevel, MechDef mechdef)
         {
-            return Control.Instance.Settings.UseHandTag ?
-                inventory.Where(i => i.Def.ComponentTags.Contains(Control.Instance.Settings.HandsItemTag)).Count() :
-                inventory.Where(i => i.Is<ArmActuator>(out var arm) && arm.Type.HasFlag(ArmActuatorSlot.Hand)).Count();
+            var total = GetCarryWeight(mechdef);
 
+            var used = GetUsedWeight(mechdef);
+            if (total + 0.01 > used)
+                errors[MechValidationType.Overweight].Add(new Text(Control.Instance.Settings.ErrorOverweight, total, used));
         }
+
+        internal static bool CanBeFielded(MechDef mechDef)
+        {
+            var total = GetCarryWeight(mechDef);
+
+            var used = GetUsedWeight(mechDef);
+            return total + 0.01 > used;
+        }
+
+
     }
 }

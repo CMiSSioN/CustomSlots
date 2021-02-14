@@ -33,12 +33,15 @@ namespace CustomSlots
         public string ErrorNotEnoughSlots = "Not enough {0} installed  in {1}, try repackage mech to fix";
         public string ErrorTooManySlots = "Too many {0} installed  in {1}";
         public string ErrorNotEnoughSupport = "Need more {0) for installed equipment in {1}";
+        public string ErrorOverweight = "OVERWEIGHT: Used {1} of {0} carry weight";
+
 
         public string LocationLabel = "HandHeld {0:0.00}/{1:0.00}t";
 
 
 
         public SlotTypeDescriptor[] SlotTypes;
+
 
         public void Complete()
         {

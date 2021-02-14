@@ -18,7 +18,7 @@ namespace CustomSlots.Patches
         [HarmonyPostfix]
         public static void UpdateLabel(MechDef mechDef)
         {
-            if (CarryWeightTools.TextElement == null)
+            if (CarryWeightController.TextElement == null)
             {
                 Control.Instance.LogError("Cannot Find Text Label!");
                 return;
@@ -26,16 +26,16 @@ namespace CustomSlots.Patches
 
             if (mechDef == null)
             {
-                CarryWeightTools.TextElement.text = string.Format(Control.Instance.Settings.LocationLabel, 0, 0);
+                CarryWeightController.TextElement.text = string.Format(Control.Instance.Settings.LocationLabel, 0, 0);
                 return;
             }
 
-            var TotalTonage = CarryWeightTools.GetCarryWeight(mechDef, mechDef.Inventory);
-            var UsedTonnage = CarryWeightTools.GetUsedWeight(mechDef, mechDef.Inventory);
+            var TotalTonage = CarryWeightController.GetCarryWeight(mechDef, mechDef.Inventory);
+            var UsedTonnage = CarryWeightController.GetUsedWeight(mechDef, mechDef.Inventory);
                 
-            CarryWeightTools.TextElement.text = string.Format(Control.Instance.Settings.LocationLabel, UsedTonnage, TotalTonage);
+            CarryWeightController.TextElement.text = string.Format(Control.Instance.Settings.LocationLabel, UsedTonnage, TotalTonage);
 
-            foreach (var item in CarryWeightTools.CenterTorso.LocalInventory)
+            foreach (var item in CarryWeightController.CenterTorso.LocalInventory)
                 if (item.ComponentRef.Is<HandHeldInfo>(out var hh) && hh.HandsUsed)
                 {
                     int hu = hh.hands_used(TotalTonage);

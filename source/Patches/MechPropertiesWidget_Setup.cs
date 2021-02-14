@@ -19,9 +19,9 @@ namespace CustomSlots.Patches
         public static void GetText(MechLabLocationWidget ___PropertiesWidget)
         {
             var text = ___PropertiesWidget.transform.GetChild("layout_locationText").GetChild("txt_location").GetComponent<TextMeshProUGUI>();
-            CarryWeightTools.TextElement = text;
-            CarryWeightTools.Location = new LocationHelper(___PropertiesWidget);
-            CarryWeightTools.CenterTorso = new LocationHelper(new Traverse(___PropertiesWidget).Field<MechLabPanel>("mechLab").Value.GetLocationWidget(BattleTech.ArmorLocation.CenterTorso));
+            CarryWeightController.TextElement = text;
+            CarryWeightController.Location = new LocationHelper(___PropertiesWidget);
+            CarryWeightController.CenterTorso = new LocationHelper(new Traverse(___PropertiesWidget).Field<MechLabPanel>("mechLab").Value.GetLocationWidget(BattleTech.ArmorLocation.CenterTorso));
         }
     }
 }
