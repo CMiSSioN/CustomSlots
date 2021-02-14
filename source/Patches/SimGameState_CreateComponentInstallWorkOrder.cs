@@ -1,4 +1,5 @@
-﻿using BattleTech;
+﻿using System.Linq;
+using BattleTech;
 using CustomComponents;
 using Harmony;
 
@@ -14,14 +15,20 @@ namespace CustomSlots
                 ChassisLocations newLocation,
                 WorkOrderEntry_InstallComponent __result)
         {
-            if (!mechComponent.Is<HandHeldInfo>(out var hh))
+            if (newLocation == ChassisLocations.None)
                 return;
 
-            if (newLocation != ChassisLocations.None && hh.HandsUsed)
-            {
-                var tr = Traverse.Create(__result);
-                tr.Field<int>("Cost").Value = 1;
-            }
+
+            if (!mechComponent.Is<IUseTonnage>(out var hh))
+                return;
+
+            var us = mechComponent.GetComponent<IUseSlots>();
+
+            if (us == null || !Control.Instance.Settings.QuickInstall.Contains(us.SlotName))
+                return;
+
+            var tr = Traverse.Create(__result);
+            tr.Field<int>("Cost").Value = 1;
         }
     }
 }

@@ -10,8 +10,8 @@ namespace CustomSlots
     [CustomComponent("SlotInfo", AllowArray = true)]
     public class CustomSlotInfo : SimpleCustomComponent,
         IUseSlots,
-        IOnInstalled, IOnItemGrabbed,
-        IReplaceValidateDrop, IPreValidateDrop
+        IOnInstalled, IOnItemGrabbed, 
+        IPreValidateDrop, IAdjustValidateDrop
     {
         public int SlotsUsed { get; set; } = 1;
         public int SupportUsed { get; set; } = 0;
@@ -117,17 +117,29 @@ namespace CustomSlots
             return null;
         }
 
-        public string PreValidateDrop(MechLabItemSlotElement item, LocationHelper location, MechLabHelper mechlab)
+        public virtual string PreValidateDrop(MechLabItemSlotElement item, LocationHelper location, MechLabHelper mechlab)
         {
             var mech = location.mechLab.activeMechDef;
-            var total = CustomSlotControler.SlotsTotal(mech);
+            var info = SlotsInfoDatabase.GetMechInfoByType(mech, SlotName);
+            if (info == null)
+                return string.Format(Control.Instance.Settings.ErrorMechLab_Slots, item.ComponentRef.Def.Description.Name, location.LocationName);
 
-            var used = mech.Inventory.Where(i => i.IsModuleFixed(mech)).Where(i => i.Is<CustomSlotInfo>())
-                .Sum(i => i.GetComponent<CustomSlotInfo>().SpecSlotUsed);
+            var linfo = info[location.widget.loadout.Location];
+            if(linfo == null || linfo.SlotCount < GetSlotsUsed(mech))
+                return string.Format(Control.Instance.Settings.ErrorMechLab_Slots, item.ComponentRef.Def.Description.Name, location.LocationName);
 
-            if (total < SpecSlotUsed + used)
-                return string.Format(Control.Instance.Settings.NotEnoughSpecialSlots, Def.Description.Name);
-            
+            return null;
+        }
+
+        public virtual IEnumerable<IChange> ValidateDropOnAdd(MechLabItemSlotElement item, LocationHelper location, MechLabHelper mechlab,
+            List<IChange> changes)
+        {
+            return null;
+        }
+
+        public virtual IEnumerable<IChange> ValidateDropOnRemove(MechLabItemSlotElement item, LocationHelper location, MechLabHelper mechlab,
+            List<IChange> changes)
+        {
             return null;
         }
     }

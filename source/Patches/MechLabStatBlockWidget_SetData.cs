@@ -30,8 +30,8 @@ namespace CustomSlots.Patches
                 return;
             }
 
-            var TotalTonage = CarryWeightController.GetCarryWeight(mechDef, mechDef.Inventory);
-            var UsedTonnage = CarryWeightController.GetUsedWeight(mechDef, mechDef.Inventory);
+            var TotalTonage = CarryWeightController.GetCarryWeight(mechDef);
+            var UsedTonnage = CarryWeightController.GetUsedWeight(mechDef);
                 
             CarryWeightController.TextElement.text = string.Format(Control.Instance.Settings.LocationLabel, UsedTonnage, TotalTonage);
 

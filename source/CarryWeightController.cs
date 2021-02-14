@@ -66,7 +66,6 @@ namespace CustomSlots
 
             return inventory.Where(i => i.Is<IUseTonnage>()).Select(i => i.GetComponent<IUseTonnage>())
                 .Sum(i => i.GetTonnage(mech, inventory.ToInventory()));
-
         }
 
         public static void ValidateMech(Dictionary<MechValidationType, List<Text>> errors, MechValidationLevel validationlevel, MechDef mechdef)
