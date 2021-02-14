@@ -3,6 +3,7 @@ using System.Linq;
 using BattleTech;
 using BattleTech.UI;
 using CustomComponents;
+using FluffyUnderware.DevTools.Extensions;
 
 namespace CustomSlots
 {
@@ -45,12 +46,21 @@ namespace CustomSlots
         public bool ForceAnotherLocation = false;
 
 
-
- 
-
         public override void OnInstalled(WorkOrderEntry_InstallComponent order, SimGameState state, MechDef mech)
         {
-            base.OnInstalled(order, state, mech);
+            var inventory = mech.Inventory.ToList();
+            
+            var locations =
+                CustomSlotControler.AdjustDynamics(mech, CustomSlotControler.GetExtentions(mech), state, inventory);
+            locations.Set(order.DesiredLocation);
+            locations.Set(order.PreviousLocation);
+            var info = order.MechComponentRef.GetComponent<IUseSlots>();
+            foreach (var location in CustomSlotControler.all_locations)
+            {
+                if (locations.HasFlag(location))
+                    CustomSlotControler.AdjustMechDefaults(mech, state, info?.SlotName ?? "error", inventory, location);
+            }
+            mech.SetInventory(inventory.ToArray());
         }
 
         public override void OnItemGrabbed(IMechLabDraggableItem item, MechLabPanel mechLab, MechLabLocationWidget widget)

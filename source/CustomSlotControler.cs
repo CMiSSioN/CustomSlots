@@ -187,7 +187,7 @@ namespace CustomSlots
                         (total, next) =>
                         {
                             total.need += next.need;
-                            total.have += next.need;
+                            total.have += next.have;
                             return total;
                         })
                     )
@@ -242,7 +242,7 @@ namespace CustomSlots
             }
         }
 
-        private static ChassisLocations AdjustDynamics(MechDef mechDef, List<extention_record> dinamics, SimGameState simgame,
+        public static ChassisLocations AdjustDynamics(MechDef mechDef, List<extention_record> dinamics, SimGameState simgame,
             List<MechComponentRef> inv)
         {
             void add_default(free_record freeRecord, CustomSlotDynamic dinamic, int count)
@@ -568,6 +568,11 @@ namespace CustomSlots
                     }
                 }
             }
+
+            var dynamics = GetExtentions(mechdef);
+           
+            if(dynamics.Any(i => i.have != i.need))
+                errors[MechValidationType.InvalidInventorySlots].Add(new Text("Invalid extended slots, refit mech to fix"));
         }
 
         public static bool CanBeFielded(MechDef mechdef)
@@ -607,6 +612,10 @@ namespace CustomSlots
                     }
                 }
             }
+
+            var dynamics = GetExtentions(mechdef);
+            if (dynamics.Any(i => i.have != i.need))
+                return false;
 
             return true;
         }
