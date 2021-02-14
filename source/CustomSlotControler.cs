@@ -32,6 +32,30 @@ namespace CustomSlots
             public CustomSlotInfo si;
         }
 
+
+        public class slot_record
+        {
+            public MechComponentRef item { get; set; }
+            public IUseSlots slot { get; set; }
+            public int slot_used { get; set; }
+            public int sup_used { get; set; }
+            public bool is_default { get; set; }
+        }
+
+
+        public class extention_record
+        {
+            public string id { get; set; }
+            public int need { get; set; }
+            public int have { get; set; }
+        }
+
+        public class free_record
+        {
+            public ChassisLocations location { get; set; }
+            public int free_slots { get; set; }
+        }
+
         public static int GetSupportsForLocation(MechDef mech, string slotname, ChassisLocations target, IEnumerable<inventory_item> inventory = null)
         {
             int get_sort(ChassisLocations locations)
@@ -109,58 +133,33 @@ namespace CustomSlots
 
             return supports.Where(i => i.sort >= 2).Sum(i => i.count);
         }
-
-        public class slot_record
+        public static List<free_record> get_free_slots(MechDef mech,
+            ChassisLocations base_location, string SlotName, IEnumerable<inventory_item> inv = null)
         {
-            public MechComponentRef item { get; set; }
-            public IUseSlots slot { get; set; }
-            public int slot_used { get; set; }
-            public int sup_used { get; set; }
-            public bool is_default { get; set; }
-        }
-
-
-        public class extention_record
-        {
-            public string id { get; set; }
-            public int need { get; set; }
-            public int have { get; set; }
-        }
-
-        public class free_record
-        {
-            public ChassisLocations location { get; set; }
-            public int free_slots { get; set; }
-            public int free_supports { get; set; }
-        }
-
-        public static Dictionary<ChassisLocations, free_record> get_free_slots(MechDef mech, ChassisLocations base_location, bool use_support, string SlotName)
-        {
+            if (inv == null)
+                inv = mech.Inventory.ToInventory();
             var result = new Dictionary<ChassisLocations, free_record>();
             var info = SlotsInfoDatabase.GetMechInfoByType(mech, SlotName);
 
             foreach (var linfo in info)
             {
-
-
                 result[linfo.Location] = new free_record
                 {
                     location = linfo.Location,
                     free_slots = linfo.SlotCount,
-                    free_supports = use_support ? CustomSlotControler.GetSupportsForLocation(mech, SlotName, linfo.Location) : 0
                 };
             }
 
-            var slots = mech.Inventory
-                .Select(i => new { item = i, s = i.GetComponent<IUseSlots>() })
+            var slots = inv
+                .Select(i => new { item = i.item, s = i.item.GetComponent<IUseSlots>(), l = i.location })
                 .Where(i => i.s?.SlotName == SlotName)
-                .Where(i => !i.item.IsDefault() || i.item.Is<CustomSlotExtention>());
+                .Where(i => !i.item.IsDefault() || i.item.Is<CustomSlotExtenstion>());
 
             foreach (var item in slots)
-                if (result.TryGetValue(item.item.MountedLocation, out var record))
+                if (result.TryGetValue(item.l, out var record))
                     record.free_slots -= item.s.GetSlotsUsed(mech);
 
-            return result;
+            return result.Values.ToList();
         }
 
 
@@ -173,7 +172,7 @@ namespace CustomSlots
             var result = inv.Select(i => new
             {
                 din = i.item.GetComponent<CustomSlotDynamic>(),
-                ext = i.item.GetComponent<CustomSlotExtention>()
+                ext = i.item.GetComponent<CustomSlotExtenstion>()
             })
                 .Where(i => i.din != null || i.ext != null)
                 .Select(i => new extention_record
@@ -202,9 +201,8 @@ namespace CustomSlots
         {
             foreach (var mechDef in mechDefs)
             {
-                var dinamics = GetExtentions(mechDef);
-                AdjustDynamics(mechDef, dinamics);
-
+                var inv = mechDef.Inventory.ToList();
+                var changed = AdjustDynamics(mechDef, GetExtentions(mechDef, inv.ToInventory()), simgame, inv) != ChassisLocations.None; 
 
                 foreach (var slotType in Control.Instance.Settings.SlotTypes)
                 {
@@ -236,18 +234,28 @@ namespace CustomSlots
                         if (!need_fix)
                             continue;
                     }
-
-                    var inv = mechDef.Inventory.ToList();
-
-                    AdjustMechDefaults(mechDef, simgame, slotType.SlotName, inv);
-                    mechDef.SetInventory(inv.ToArray());
+                    
+                    changed = AdjustMechDefaults(mechDef, simgame, slotType.SlotName, inv) || changed;
                 }
+                if(changed)
+                    mechDef.SetInventory(inv.ToArray());
             }
         }
 
         private static ChassisLocations AdjustDynamics(MechDef mechDef, List<extention_record> dinamics, SimGameState simgame,
             List<MechComponentRef> inv)
         {
+            void add_default(free_record freeRecord, CustomSlotDynamic dinamic, int count)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    var comref = DefaultHelper.CreateRef(dinamic.ExtentionID, dinamic.ExtentionType,
+                        UnityGameInstance.BattleTechGame.DataManager, simgame);
+                    comref.SetData(freeRecord.location, 0, ComponentDamageLevel.Functional, true);
+                    inv.Add(comref);
+                }
+            }
+
             ChassisLocations result = ChassisLocations.None;
             foreach (var er in dinamics)
             {
@@ -258,18 +266,83 @@ namespace CustomSlots
                     result.Set(mechComponentRef.MountedLocation);
 
                 inv.RemoveAll(i => i.ComponentDefID == er.id);
-                foreach (var item in inv.Where(i => i.Is<CustomSlotDynamic>(out var d) && d.ExtentionID == er.id))
-                {
-                    var dinamic = item.GetComponent<CustomSlotDynamic>();
-                    if (dinamic.ExtentionCount(mechDef, inv.ToInventory()) > 0)
-                    {
+                var items = inv.Where(i => i.Is<CustomSlotDynamic>(out var d) && d.ExtentionID == er.id).ToList();
 
+                if (items.Count == 0)
+                    continue;
+
+                var d = items[0].GetComponent<CustomSlotDynamic>();
+
+                var component = SlotsInfoDatabase.GetComponentDef(d.ExtentionID, d.ExtentionType);
+                if (component == null)
+                {
+                    CustomComponents.Control.LogError($"Cannot find {d.ExtentionID} of type {d.ExtentionType}");
+                    continue;
+                }
+
+                if (!component.IsDefault())
+                {
+                    Control.Instance.LogError($"{component.Description.Id} is not default, cannot be used as extenstion");
+                    continue;
+                }
+
+                var extinfo = component.GetComponent<CustomSlotExtenstion>();
+                if (extinfo == null)
+                {
+                    Control.Instance.LogError($"{component.Description.Id} is not extenstion");
+                    continue;
+                }
+
+                foreach (var item in items)
+                {
+                    var dynamic = item.GetComponent<CustomSlotDynamic>();
+                    if (extinfo.SlotName != dynamic.SlotName)
+                    {
+                        Control.Instance.LogError($"{component.Description.Id} extenstion is not same slot type as dynamic {item.ComponentDefID}");
+                        continue;
+                    }
+
+                    var slotinfo = SlotsInfoDatabase.GetMechInfoByType(mechDef, dynamic.SlotName);
+
+                    var use_support = slotinfo.Descriptor.HaveSupports && extinfo.UseSupport;
+
+                    var extention = dynamic.ExtentionCount(mechDef, inv.ToInventory());
+                    if (extention > 0)
+                    {
+                        var free_slots = get_free_slots(mechDef, item.MountedLocation, dynamic.SlotName);
+                        if (dynamic.ForceAnotherLocation)
+                            free_slots.RemoveAll(i => i.location == item.MountedLocation);
+
+
+                        foreach (var freeRecord in free_slots)
+                        {
+                            var max = use_support
+                                ? GetSupportsForLocation(mechDef, dynamic.SlotName, freeRecord.location,
+                                    inv.ToInventory()) : 9999;
+
+                            max = freeRecord.free_slots < max ? freeRecord.free_slots : max;
+                            if (max == 0)
+                                continue;
+
+                            result.Set(freeRecord.location);
+                            if (max >= extention)
+                            {
+                                add_default(freeRecord, dynamic, extention);
+                                break;
+                            }
+                            else
+                            {
+                                add_default(freeRecord, dynamic, max);
+                                extention -= max;
+                            }
+                        }
                     }
                 }
             }
 
             return result;
         }
+
 
         public static bool AdjustMechDefaults(MechDef mechDef, SimGameState simgame, List<MechComponentRef> inventory)
         {
@@ -295,7 +368,7 @@ namespace CustomSlots
                 {
                     item = i.item,
                     slot = i.slot,
-                    is_default = !i.item.Is<CustomSlotExtention>() && i.item.IsDefault(),
+                    is_default = !i.item.Is<CustomSlotExtenstion>() && i.item.IsDefault(),
                     slot_used = i.slot.GetSlotsUsed(mechDef, inventory.ToInventory()),
                     sup_used = sinfo.Descriptor.HaveSupports ? i.slot.GetSlotsUsed(mechDef, inventory.ToInventory()) : 0
 
@@ -372,7 +445,7 @@ namespace CustomSlots
             {
                 var r_item = DefaultHelper.CreateRef(needDefault.item.Description.Id,
                     needDefault.item.ComponentType, UnityGameInstance.BattleTechGame.DataManager, simGame);
-                r_item.SetData(location, 0 , ComponentDamageLevel.Functional, true);
+                r_item.SetData(location, 0, ComponentDamageLevel.Functional, true);
                 inventory.Add(r_item);
             }
 
@@ -398,7 +471,7 @@ namespace CustomSlots
                 {
                     item = i.item,
                     slot = i.slot,
-                    is_default = !i.item.Is<CustomSlotExtention>() && i.item.IsDefault(),
+                    is_default = !i.item.Is<CustomSlotExtenstion>() && i.item.IsDefault(),
                     slot_used = i.slot.GetSlotsUsed(mechDef, inventory.ToInventory()),
                     sup_used = sinfo.Descriptor.HaveSupports ? i.slot.GetSlotsUsed(mechDef, inventory.ToInventory()) : 0
 

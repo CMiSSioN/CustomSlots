@@ -6,8 +6,8 @@ using CustomComponents;
 
 namespace CustomSlots
 {
-    [CustomComponent("SlotExtention")]
-    public class CustomSlotExtention : SimpleCustomComponent, IUseSlots
+    [CustomComponent("SlotExtenstion")]
+    public class CustomSlotExtenstion : SimpleCustomComponent, IUseSlots
     {
         public string SlotName { get; set; }
         public bool UseSupport { get; set; } = true;
@@ -38,6 +38,7 @@ namespace CustomSlots
     public abstract class CustomSlotDynamic : CustomSlotInfo
     {
         public string ExtentionID { get; set; }
+        public ComponentType ExtentionType { get; set; } = ComponentType.Upgrade;
 
         public abstract int ExtentionCount(MechDef mech, IEnumerable<inventory_item> inventory);
         public abstract int ExtentionCount(MechDef mech);
@@ -49,13 +50,6 @@ namespace CustomSlots
 
         public override void OnInstalled(WorkOrderEntry_InstallComponent order, SimGameState state, MechDef mech)
         {
-
-
-            if (ExtentionCount(mech) > 0)
-            {
-                var free_slots = get_free_slots(mech, order.DesiredLocation);
-            }
-
             base.OnInstalled(order, state, mech);
         }
 

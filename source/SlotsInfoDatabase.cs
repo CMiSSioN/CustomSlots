@@ -187,6 +187,32 @@ namespace CustomSlots
 
         }
 
+        public static MechComponentDef GetComponentDef(string id, ComponentType type)
+        {
+            var dm = UnityGameInstance.BattleTechGame.DataManager;
+            switch (type)
+            {
+                case ComponentType.Weapon:
+                    dm.WeaponDefs.TryGet(id, out var weapon);
+                    return weapon;
+                case ComponentType.AmmunitionBox:
+                    dm.AmmoBoxDefs.TryGet(id, out var ammobox);
+                    return ammobox;
+                case ComponentType.HeatSink:
+                    dm.HeatSinkDefs.TryGet(id, out var hs);
+                    return hs;
+                case ComponentType.JumpJet:
+                    dm.JumpJetDefs.TryGet(id, out var jj);
+                    return jj;
+                case ComponentType.Upgrade:
+                    dm.UpgradeDefs.TryGet(id, out var upgrade);
+                    return upgrade;
+                default:
+                    CustomComponents.Control.LogError($"Cannot find {id} of type {type}");
+                    return null;
+            }
+        }
+
         public static SlotDescriptor.location_info.def_info GetDefault(def_record def)
         {
             if (defaults_cache.TryGetValue(def.id, out var result))
@@ -194,35 +220,7 @@ namespace CustomSlots
                 return result;
             }
 
-            MechComponentDef item;
-
-            var dm = UnityGameInstance.BattleTechGame.DataManager;
-            switch (def.type)
-            {
-                case ComponentType.Weapon:
-                    dm.WeaponDefs.TryGet(def.id, out var weapon);
-                    item = weapon;
-                    break;
-                case ComponentType.AmmunitionBox:
-                    dm.AmmoBoxDefs.TryGet(def.id, out var ammobox);
-                    item = ammobox;
-                    break;
-                case ComponentType.HeatSink:
-                    dm.HeatSinkDefs.TryGet(def.id, out var hs);
-                    item = hs;
-                    break;
-                case ComponentType.JumpJet:
-                    dm.JumpJetDefs.TryGet(def.id, out var jj);
-                    item = jj;
-                    break;
-                case ComponentType.Upgrade:
-                    dm.UpgradeDefs.TryGet(def.id, out var upgrade);
-                    item = upgrade;
-                    break;
-                default:
-                    CustomComponents.Control.LogError($"Cannot find {def.id} of type {def.type}");
-                    return null;
-            }
+            var item = GetComponentDef(def.id, def.type);
 
             var csi = item.GetComponent<IUseSlots>();
             if (csi == null)
