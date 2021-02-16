@@ -11,7 +11,7 @@ namespace CustomSlots
     public class CustomSlotInfo : SimpleCustomComponent,
         IUseSlots,
         IOnInstalled, IOnItemGrabbed, 
-        IPreValidateDrop, IAdjustValidateDrop
+        IPreValidateDrop
     {
         public int SlotsUsed { get; set; } = 1;
         public int SupportUsed { get; set; } = 0;
@@ -128,18 +128,6 @@ namespace CustomSlots
             if(linfo == null || linfo.SlotCount < GetSlotsUsed(mech))
                 return string.Format(Control.Instance.Settings.ErrorMechLab_Slots, item.ComponentRef.Def.Description.Name, location.LocationName);
 
-            return null;
-        }
-
-        public virtual IEnumerable<IChange> ValidateDropOnAdd(MechLabItemSlotElement item, LocationHelper location, MechLabHelper mechlab,
-            List<IChange> changes)
-        {
-            return null;
-        }
-
-        public virtual IEnumerable<IChange> ValidateDropOnRemove(MechLabItemSlotElement item, LocationHelper location, MechLabHelper mechlab,
-            List<IChange> changes)
-        {
             return null;
         }
     }
