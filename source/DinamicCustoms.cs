@@ -24,12 +24,12 @@ namespace CustomSlots
         }
 
 
-        public int GetSlotsUsed(MechDef mech, IEnumerable<inventory_item> inventory)
+        public int GetSlotsUsed(MechDef mech, IEnumerable<InvItem> inventory)
         {
             return 1;
         }
 
-        public int GetSupportUsed(MechDef mech, IEnumerable<inventory_item> inventory)
+        public int GetSupportUsed(MechDef mech, IEnumerable<InvItem> inventory)
         {
             return UseSupport ? 1 : 0;
         }
@@ -41,7 +41,7 @@ namespace CustomSlots
         public string ExtentionID { get; set; }
         public ComponentType ExtentionType { get; set; } = ComponentType.Upgrade;
 
-        public abstract int ExtentionCount(MechDef mech, IEnumerable<inventory_item> inventory);
+        public abstract int ExtentionCount(MechDef mech, IEnumerable<InvItem> inventory);
         public abstract int ExtentionCount(MechDef mech);
         public bool ForceAnotherLocation = false;
 

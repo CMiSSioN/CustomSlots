@@ -9,7 +9,7 @@ namespace CustomSlots
     {
         public string SlotName { get; set; }
         public ChassisLocations Location { get; set; } = ChassisLocations.None;
-        public int GetSupportAdd(MechDef mech, IEnumerable<inventory_item> inventory)
+        public int GetSupportAdd(MechDef mech, IEnumerable<InvItem> inventory)
         {
             return Support;
         }

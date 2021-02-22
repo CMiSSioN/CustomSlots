@@ -19,7 +19,7 @@ namespace CustomSlots
     {
         public float AddTonnage = 0;
         
-        public float GetAddTonnage(MechDef mech, IEnumerable<inventory_item> inventory)
+        public float GetAddTonnage(MechDef mech, IEnumerable<InvItem> inventory)
         {
             return AddTonnage;
         }
@@ -34,7 +34,7 @@ namespace CustomSlots
     public class UseCarryWeight : SimpleCustomComponent, IUseTonnage
     {
         public float UseTonnage { get; set; } = 0;
-        public float GetTonnage(MechDef mech, IEnumerable<inventory_item> inventory)
+        public float GetTonnage(MechDef mech, IEnumerable<InvItem> inventory)
         {
             return UseTonnage;
         }

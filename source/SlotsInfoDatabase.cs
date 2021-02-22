@@ -22,7 +22,7 @@ namespace CustomSlots
             public int SlotCount { get; set; }
             public def_info[] Defaults;
 
-            public List<def_info> GetDefaults(MechDef mech, IEnumerable<inventory_item> inventory, int free_slots,
+            public List<def_info> GetDefaults(MechDef mech, IEnumerable<InvItem> inventory, int free_slots,
                 int free_supps)
             {
                 List<def_info> result = new List<def_info>();

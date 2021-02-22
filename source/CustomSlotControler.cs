@@ -56,7 +56,7 @@ namespace CustomSlots
             public int free_slots { get; set; }
         }
 
-        public static int GetSupportsForLocation(MechDef mech, string slotname, ChassisLocations target, IEnumerable<inventory_item> inventory = null)
+        public static int GetSupportsForLocation(MechDef mech, string slotname, ChassisLocations target, IEnumerable<InvItem> inventory = null)
         {
             int get_sort(ChassisLocations locations)
             {
@@ -133,8 +133,10 @@ namespace CustomSlots
 
             return supports.Where(i => i.sort >= 2).Sum(i => i.count);
         }
+
+
         public static List<free_record> get_free_slots(MechDef mech,
-            ChassisLocations base_location, string SlotName, IEnumerable<inventory_item> inv = null)
+            ChassisLocations base_location, string SlotName, IEnumerable<InvItem> inv = null)
         {
             if (inv == null)
                 inv = mech.Inventory.ToInventory();
@@ -164,7 +166,7 @@ namespace CustomSlots
 
 
         public static List<extention_record> GetExtentions(MechDef mech,
-            IEnumerable<inventory_item> inventory = null)
+            IEnumerable<InvItem> inventory = null)
         {
 
             var inv = inventory == null ? mech.Inventory.ToInventory().ToArray() : inventory.ToArray();
@@ -619,5 +621,11 @@ namespace CustomSlots
 
             return true;
         }
+
+        internal static string PostValidator(MechLabItemSlotElement drop_item, MechDef mech, List<InvItem> new_inventory, List<IChange> changes)
+        {
+            throw new NotImplementedException();
+        }
+
     }
 }

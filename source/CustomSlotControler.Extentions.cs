@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using BattleTech;
+using BattleTech.UI;
 using CustomComponents;
 using JetBrains.Annotations;
 
@@ -10,9 +11,9 @@ namespace CustomSlots
     {
         #region extention for patching
 
-        public static IEnumerable<inventory_item> ToInventory(this IEnumerable<MechComponentRef> items)
+        public static IEnumerable<InvItem> ToInventory(this IEnumerable<MechComponentRef> items)
         {
-            return items.Select(i => new inventory_item {item = i, location = i.MountedLocation});
+            return items.Select(i => new InvItem { item = i, location = i.MountedLocation});
         }
 
         public static ISlotsOverride GetSlotsOverride(this MechDef mech, string type)
@@ -69,7 +70,7 @@ namespace CustomSlots
         }
 
 
-        public static int Supports(this MechDef mech, string slotname, ChassisLocations location, IEnumerable<inventory_item> inventory = null)
+        public static int Supports(this MechDef mech, string slotname, ChassisLocations location, IEnumerable<InvItem> inventory = null)
         {
             int num = 0;
             if (inventory == null)
@@ -86,7 +87,7 @@ namespace CustomSlots
             return num;
         }
 
-        public static int Supports(this MechDef mech, string slotname, IEnumerable<inventory_item> inventory = null)
+        public static int Supports(this MechDef mech, string slotname, IEnumerable<InvItem> inventory = null)
         {
             if (inventory == null)
                 inventory = mech.Inventory.ToInventory();
