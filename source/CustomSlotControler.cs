@@ -204,7 +204,7 @@ namespace CustomSlots
             foreach (var mechDef in mechDefs)
             {
                 var inv = mechDef.Inventory.ToList();
-                var changed = AdjustDynamics(mechDef, GetExtentions(mechDef, inv.ToInventory()), simgame, inv) != ChassisLocations.None; 
+                var changed = AdjustDynamics(mechDef, GetExtentions(mechDef, inv.ToInventory()), simgame, inv) != ChassisLocations.None;
 
                 foreach (var slotType in Control.Instance.Settings.SlotTypes)
                 {
@@ -236,10 +236,10 @@ namespace CustomSlots
                         if (!need_fix)
                             continue;
                     }
-                    
+
                     changed = AdjustMechDefaults(mechDef, simgame, slotType.SlotName, inv) || changed;
                 }
-                if(changed)
+                if (changed)
                     mechDef.SetInventory(inv.ToArray());
             }
         }
@@ -400,7 +400,7 @@ namespace CustomSlots
             var total_slots = linfo?.SlotCount ?? 0;
 
             //cannot fix
-            if (used_defaults == 0)
+            if (used_defaults == 0 && used_slots >= total_slots)
                 return false;
 
             //if remove all defaults will be enough to fix
@@ -494,38 +494,79 @@ namespace CustomSlots
             AdjustMechDefaults(mech, simgame, result);
         }
 
-        internal static void AdjustDefaultsMechlab(MechLabPanel mechLab, MechLabLocationWidget widget)
+        internal static void AdjustDefaultsMechlab(MechLabPanel mechLab, MechLabLocationWidget widget, SlotDescriptor slotType)
         {
             var helper = new MechLabHelper(mechLab);
+            var whelper = new LocationHelper(widget);
             var mech = mechLab.activeMechDef;
+            var slotname = slotType.Descriptor.SlotName;
+            var location = widget.loadout.Location;
 
-            var items_to_remove = mech.Inventory.Where(i => i.IsDefault() && i.Is<CustomSlotInfo>()).ToList();
+            var slots = whelper.LocalInventory
+                .Select(i => new { item = i, slot = i.ComponentRef.GetComponent<IUseSlots>() })
+                .Where(i =>
+                {
+                    return i.slot != null && i.slot.SlotName == slotname;
+                })
+                .Select(i => new
+                {
+                    item = i.item,
+                    slot = i.slot,
+                    is_default = !i.item.ComponentRef.Is<CustomSlotExtenstion>() && i.item.ComponentRef.IsDefault(),
+                    slot_used = i.slot.GetSlotsUsed(mechLab.activeMechDef),
+                    sup_used = slotType.Descriptor.HaveSupports ? i.slot.GetSlotsUsed(mechLab.activeMechDef) : 0
+                }).ToArray();
 
-            foreach (var item in items_to_remove)
-                DefaultHelper.RemoveMechLab(item.ComponentDefID, item.ComponentDefType, helper,
-                    ChassisLocations.CenterTorso);
-            //RemoveMechLab(item);
+            var linfo = slotType[location];
+            var used_slots = slots?.Sum(i => i.slot_used) ?? 0;
+            var used_defaults = slots?.Where(i => i.is_default).Sum(i => i.slot_used) ?? 0;
 
-            mech.SetInventory(mech.Inventory.Where(i => !(i.IsDefault() && i.Is<HandHeldInfo>())).ToArray());
+            var total_slots = linfo?.SlotCount ?? 0;
 
-            var slot_used = SlotsUsed(mech);
-            var slot_max = SlotsTotal(mech);
-            var sdef = GetDefInfo(mech);
+            //cannot fix
+            if (used_defaults == 0 && used_slots >= total_slots)
+                return;
 
-            var defaults = GetDefaults(mech, mechLab.sim, sdef);
-
-            int n = 0;
-            while (slot_used < slot_max)
+            //if remove all defaults will be enough to fix
+            if (used_slots - total_slots >= used_defaults)
             {
-                while (slot_max - slot_used < defaults[n].si.SpecSlotUsed)
-                    n += 1;
-                var item = defaults[n];
-                DefaultHelper.AddMechLab(item.item.ComponentDefID, item.item.ComponentDefType, helper,
-                    ChassisLocations.CenterTorso);
-                slot_used += defaults[n].si.SpecSlotUsed;
+                if (used_defaults <= 0) return;
+                foreach (var slot in slots.Where(i => i.is_default).Select(i => i.item))
+                    DefaultHelper.RemoveMechLab(whelper, slot, helper);
+            }
 
-                if (n + 1 < defaults.Count)
-                    n += 1;
+            var support = slotType.Descriptor.HaveSupports
+                ? GetSupportsForLocation(mech, slotname, location, mech.Inventory.ToInventory())
+                : 0;
+
+            var defaults = slots.Where(i => i.is_default).ToList();
+            var used_sup_defaults = slotType.Descriptor.HaveSupports
+                ? defaults.Sum(i => i.sup_used)
+                : 0;
+
+            var need_defaults = linfo.GetDefaults(mech, mech.Inventory.ToInventory(),
+                total_slots - (used_slots - used_defaults), support + used_sup_defaults);
+            bool need_fix = false;
+
+            foreach (var def in need_defaults)
+            {
+                var item = defaults.FirstOrDefault(i => i.item.ComponentRef.ComponentDefID == def.item.Description.Id);
+                if (item == null)
+                {
+                    need_fix = true;
+                    break;
+                }
+
+                defaults.Remove(item);
+            }
+
+            if (!need_fix && defaults.Count == 0)
+                return;
+            foreach (var itemRecord in slots.Where(i => i.is_default))
+                DefaultHelper.RemoveMechLab(whelper, itemRecord.item, helper);
+            foreach (var needDefault in need_defaults)
+            {
+                DefaultHelper.AddMechLab(needDefault.item.Description.Id, needDefault.item.ComponentType, helper, location);
             }
         }
 
@@ -572,8 +613,8 @@ namespace CustomSlots
             }
 
             var dynamics = GetExtentions(mechdef);
-           
-            if(dynamics.Any(i => i.have != i.need))
+
+            if (dynamics.Any(i => i.have != i.need))
                 errors[MechValidationType.InvalidInventorySlots].Add(new Text("Invalid extended slots, refit mech to fix"));
         }
 
@@ -621,11 +662,5 @@ namespace CustomSlots
 
             return true;
         }
-
-        internal static string PostValidator(MechLabItemSlotElement drop_item, MechDef mech, List<InvItem> new_inventory, List<IChange> changes)
-        {
-            throw new NotImplementedException();
-        }
-
     }
 }
