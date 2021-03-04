@@ -64,7 +64,6 @@ namespace CustomSlots
                 CustomComponents.Validator.RegisterClearInventory(CustomSlotControler.ClearInventory);
                 CustomComponents.Validator.RegisterMechValidator(CarryWeightController.ValidateMech, CarryWeightController.CanBeFielded);
                 CustomComponents.Validator.RegisterMechValidator(CustomSlotControler.ValidateMech, CustomSlotControler.CanBeFielded);
-                CustomComponents.Validator.RegisterDropValidator(check: CustomSlotControler.PostValidator);
                 
                 if(Settings.RunAutofixer)
                     CustomComponents.AutoFixer.Shared.RegisterMechFixer(CustomSlotControler.AutoFixMech);

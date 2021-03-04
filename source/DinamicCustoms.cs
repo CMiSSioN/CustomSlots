@@ -65,12 +65,16 @@ namespace CustomSlots
 
         public override void OnItemGrabbed(IMechLabDraggableItem item, MechLabPanel mechLab, MechLabLocationWidget widget)
         {
-            if (ExtentionCount(mechLab.activeMechDef) > 0)
+            var affected = CustomSlotControler.AdjustDinamicsMechlab(mechLab);
+            affected.Set(widget.loadout.Location);
+            var mhelper = new MechLabHelper(mechLab);
+            
+            foreach (var location in CustomSlotControler.all_locations.Where(l => affected.HasFlag(l)))
             {
-
+                var w = mhelper.GetLocationWidget(location);
+                var d = SlotsInfoDatabase.GetMechInfoByType(mechLab.activeMechDef, SlotName);
+                CustomSlotControler.AdjustDefaultsMechlab(mechLab, widget, d);
             }
-
-            base.OnItemGrabbed(item, mechLab, widget);
         }
     }
 }

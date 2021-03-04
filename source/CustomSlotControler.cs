@@ -244,14 +244,14 @@ namespace CustomSlots
             }
         }
 
-        public static ChassisLocations AdjustDynamics(MechDef mechDef, List<extention_record> dinamics, SimGameState simgame,
+        public static ChassisLocations AdjustDynamics(MechDef mechDef, List<extention_record> dynamics, SimGameState simgame,
             List<MechComponentRef> inv)
         {
-            void add_default(free_record freeRecord, CustomSlotDynamic dinamic, int count)
+            void add_default(free_record freeRecord, CustomSlotDynamic dynamic, int count)
             {
                 for (int i = 0; i < count; i++)
                 {
-                    var comref = DefaultHelper.CreateRef(dinamic.ExtentionID, dinamic.ExtentionType,
+                    var comref = DefaultHelper.CreateRef(dynamic.ExtentionID, dynamic.ExtentionType,
                         UnityGameInstance.BattleTechGame.DataManager, simgame);
                     comref.SetData(freeRecord.location, 0, ComponentDamageLevel.Functional, true);
                     inv.Add(comref);
@@ -259,11 +259,9 @@ namespace CustomSlots
             }
 
             ChassisLocations result = ChassisLocations.None;
-            foreach (var er in dinamics)
-            {
-                if (er.need == er.have)
-                    continue;
 
+            foreach (var er in dynamics.Where(er => er.need != er.have))
+            {
                 foreach (var mechComponentRef in inv.Where(i => i.ComponentDefID == er.id))
                     result.Set(mechComponentRef.MountedLocation);
 
@@ -294,6 +292,11 @@ namespace CustomSlots
                     Control.Instance.LogError($"{component.Description.Id} is not extenstion");
                     continue;
                 }
+                var slotinfo = SlotsInfoDatabase.GetMechInfoByType(mechDef, extinfo.SlotName);
+
+                var use_support = slotinfo.Descriptor.HaveSupports && extinfo.UseSupport;
+
+
 
                 foreach (var item in items)
                 {
@@ -304,11 +307,8 @@ namespace CustomSlots
                         continue;
                     }
 
-                    var slotinfo = SlotsInfoDatabase.GetMechInfoByType(mechDef, dynamic.SlotName);
-
-                    var use_support = slotinfo.Descriptor.HaveSupports && extinfo.UseSupport;
-
                     var extention = dynamic.ExtentionCount(mechDef, inv.ToInventory());
+
                     if (extention > 0)
                     {
                         var free_slots = get_free_slots(mechDef, item.MountedLocation, dynamic.SlotName);
@@ -568,6 +568,99 @@ namespace CustomSlots
             {
                 DefaultHelper.AddMechLab(needDefault.item.Description.Id, needDefault.item.ComponentType, helper, location);
             }
+        }
+
+        internal static ChassisLocations AdjustDinamicsMechlab(MechLabPanel mechlab)
+        {
+            var result = ChassisLocations.None;
+            var dynamics = GetExtentions(mechlab.activeMechDef);
+
+            var mech = mechlab.activeMechDef;
+            var helper = new MechLabHelper(mechlab);
+            foreach (var extention in dynamics.Where(i => i.have != i.need))
+            {
+                var to_remove = mech.Inventory.Where(i => i.ComponentDefID == extention.id).ToArray();
+
+                foreach (var item in to_remove)
+                {
+                    DefaultHelper.RemoveMechLab(item.ComponentDefID, item.ComponentDefType, helper, item.MountedLocation);
+                    result.Set(item.MountedLocation);
+                }
+
+                var to_check = mech.Inventory.Where(i => i.Is<CustomSlotDynamic>(out var d) && d.ExtentionID == extention.id).ToList();
+
+                if (to_check.Count == 0)
+                    continue;
+
+                var d = to_check[0].GetComponent<CustomSlotDynamic>();
+                var component = SlotsInfoDatabase.GetComponentDef(d.ExtentionID, d.ExtentionType);
+                if (component == null)
+                {
+                    CustomComponents.Control.LogError($"Cannot find {d.ExtentionID} of type {d.ExtentionType}");
+                    continue;
+                }
+
+                if (!component.IsDefault())
+                {
+                    Control.Instance.LogError($"{component.Description.Id} is not default, cannot be used as extenstion");
+                    continue;
+                }
+
+                var extinfo = component.GetComponent<CustomSlotExtenstion>();
+                if (extinfo == null)
+                {
+                    Control.Instance.LogError($"{component.Description.Id} is not extenstion");
+                    continue;
+                }
+                var slotinfo = SlotsInfoDatabase.GetMechInfoByType(mech, extinfo.SlotName);
+                var use_support = slotinfo.Descriptor.HaveSupports && extinfo.UseSupport;
+
+                foreach (var item in to_check)
+                {
+                    var dynamic = item.GetComponent<CustomSlotDynamic>();
+                    if (extinfo.SlotName != dynamic.SlotName)
+                    {
+                        Control.Instance.LogError($"{component.Description.Id} extenstion is not same slot type as dynamic {item.ComponentDefID}");
+                        continue;
+                    }
+
+                    var ext_count = dynamic.ExtentionCount(mech);
+
+                    if (ext_count > 0)
+                    {
+                        var free_slots = get_free_slots(mech, item.MountedLocation, dynamic.SlotName);
+                        if (dynamic.ForceAnotherLocation)
+                            free_slots.RemoveAll(i => i.location == item.MountedLocation);
+
+
+                        foreach (var freeRecord in free_slots)
+                        {
+                            var max = use_support
+                                ? GetSupportsForLocation(mech, dynamic.SlotName, freeRecord.location) : 9999;
+
+                            max = freeRecord.free_slots < max ? freeRecord.free_slots : max;
+                            if (max == 0)
+                                continue;
+
+                            result.Set(freeRecord.location);
+                            if (max >= ext_count)
+                            {
+                                for (int i = 0; i < ext_count; i++)
+                                    DefaultHelper.AddMechLab(d.ExtentionID, d.ExtentionType, helper, freeRecord.location);
+                                break;
+                            }
+                            else
+                            {
+                                for (int i = 0; i < max; i++)
+                                    DefaultHelper.AddMechLab(d.ExtentionID, d.ExtentionType, helper, freeRecord.location);
+                                ext_count -= max;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return result;
         }
 
         public static void ValidateMech(Dictionary<MechValidationType, List<Text>> errors,

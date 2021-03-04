@@ -49,7 +49,8 @@ namespace CustomSlots
 
         public virtual void OnItemGrabbed(IMechLabDraggableItem item, MechLabPanel mechLab, MechLabLocationWidget widget)
         {
-            CustomSlotControler.AdjustDefaultsMechlab(mechLab, widget);
+            var d = SlotsInfoDatabase.GetMechInfoByType(mechLab.activeMechDef, SlotName);
+            CustomSlotControler.AdjustDefaultsMechlab(mechLab, widget, d);
         }
 
         public string ReplaceValidateDrop(MechLabItemSlotElement drop_item, LocationHelper location, List<IChange> changes)
