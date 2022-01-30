@@ -11,17 +11,16 @@ using CustomComponents;
 
 namespace CustomSlots.Patches
 {
-    [HarmonyPatch(typeof(MechPropertiesWidget))]
+    [HarmonyPatch(typeof(CustomWidgetsFixMechLab))]
     [HarmonyPatch("Setup")]
-    public static class MechPropertiesWidget_Setup
-    {
+    public static class CustomWidgetsFixMechLab_Setup {
         [HarmonyPostfix]
-        public static void GetText(MechLabLocationWidget ___PropertiesWidget)
+        public static void GetText(MechLabLocationWidget ___TopLeftWidget)
         {
-            var text = ___PropertiesWidget.transform.GetChild("layout_locationText").GetChild("txt_location").GetComponent<TextMeshProUGUI>();
+            var text = ___TopLeftWidget.transform.GetChild("layout_locationText").GetChild("txt_location").GetComponent<TextMeshProUGUI>();
             CarryWeightController.TextElement = text;
-            CarryWeightController.Location = new LocationHelper(___PropertiesWidget);
-            CarryWeightController.CenterTorso = new LocationHelper(new Traverse(___PropertiesWidget).Field<MechLabPanel>("mechLab").Value.GetLocationWidget(BattleTech.ArmorLocation.CenterTorso));
+            CarryWeightController.Location = new LocationHelper(___TopLeftWidget);
+            CarryWeightController.CenterTorso = new LocationHelper(new Traverse(___TopLeftWidget).Field<MechLabPanel>("mechLab").Value.GetLocationWidget(BattleTech.ArmorLocation.CenterTorso));
         }
     }
 }

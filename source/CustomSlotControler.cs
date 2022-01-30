@@ -1,14 +1,10 @@
 ﻿using BattleTech;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
 using BattleTech.UI;
 using CustomComponents;
 using FluffyUnderware.DevTools.Extensions;
-using JetBrains.Annotations;
 using Localize;
-using Steamworks;
 
 namespace CustomSlots
 {
@@ -76,11 +72,11 @@ namespace CustomSlots
             if (inventory == null)
                 inventory = mech.Inventory.ToInventory();
 
-            var supports = inventory.Where(i => i.item.IsSupport(slotname)).Select(i => new
+            var supports = inventory.Where(i => i.Item.IsSupport(slotname)).Select(i => new
             {
-                item = i.item,
-                location = i.location,
-                support = i.item.GetSupport(slotname)
+                item = i.Item,
+                location = i.Item.MountedLocation,
+                support = i.Item.GetSupport(slotname)
             })
                 .Select(i => new
                 {
@@ -95,11 +91,11 @@ namespace CustomSlots
                 return 0;
 
             var slots = inventory
-                .Select(i => new { loc = i.location, slot = i.item.GetComponent<IUseSlots>() })
+                .Select(i => new { loc = i.Item.MountedLocation, slot = i.Item.GetComponent<IUseSlots>() })
                 .Where(i => i.slot != null && i.slot.SlotName == slotname)
                 .GroupBy(i => i.loc)
                 .Select(i => new
-                { loc = i.Key, count = i.Sum(i => i.slot.GetSupportUsed(mech, inventory)), sort = i.Key == target ? 1 : 0 })
+                { loc = i.Key, count = i.Sum(ii => ii.slot.GetSupportUsed(mech, inventory)), sort = i.Key == target ? 1 : 0 })
                 .Where(i => i.count > 0)
                 .OrderBy(i => i.sort).ToList();
 
@@ -153,7 +149,7 @@ namespace CustomSlots
             }
 
             var slots = inv
-                .Select(i => new { item = i.item, s = i.item.GetComponent<IUseSlots>(), l = i.location })
+                .Select(i => new { item = i.Item, s = i.Item.GetComponent<IUseSlots>(), l = i.Item.MountedLocation })
                 .Where(i => i.s?.SlotName == SlotName)
                 .Where(i => !i.item.IsDefault() || i.item.Is<CustomSlotExtenstion>());
 
@@ -173,8 +169,8 @@ namespace CustomSlots
 
             var result = inv.Select(i => new
             {
-                din = i.item.GetComponent<CustomSlotDynamic>(),
-                ext = i.item.GetComponent<CustomSlotExtenstion>()
+                din = i.Item.GetComponent<CustomSlotDynamic>(),
+                ext = i.Item.GetComponent<CustomSlotExtenstion>()
             })
                 .Where(i => i.din != null || i.ext != null)
                 .Select(i => new extention_record
@@ -251,8 +247,7 @@ namespace CustomSlots
             {
                 for (int i = 0; i < count; i++)
                 {
-                    var comref = DefaultHelper.CreateRef(dynamic.ExtentionID, dynamic.ExtentionType,
-                        UnityGameInstance.BattleTechGame.DataManager, simgame);
+                    var comref = DefaultHelper.CreateRef(dynamic.ExtentionID, dynamic.ExtentionType, freeRecord.location);
                     comref.SetData(freeRecord.location, 0, ComponentDamageLevel.Functional, true);
                     inv.Add(comref);
                 }
@@ -266,7 +261,7 @@ namespace CustomSlots
                     result.Set(mechComponentRef.MountedLocation);
 
                 inv.RemoveAll(i => i.ComponentDefID == er.id);
-                var items = inv.Where(i => i.Is<CustomSlotDynamic>(out var d) && d.ExtentionID == er.id).ToList();
+                var items = inv.Where(i => i.Is<CustomSlotDynamic>(out var dd) && dd.ExtentionID == er.id).ToList();
 
                 if (items.Count == 0)
                     continue;
@@ -446,7 +441,7 @@ namespace CustomSlots
             foreach (var needDefault in need_defaults)
             {
                 var r_item = DefaultHelper.CreateRef(needDefault.item.Description.Id,
-                    needDefault.item.ComponentType, UnityGameInstance.BattleTechGame.DataManager, simGame);
+                    needDefault.item.ComponentType, location);
                 r_item.SetData(location, 0, ComponentDamageLevel.Functional, true);
                 inventory.Add(r_item);
             }
@@ -532,7 +527,7 @@ namespace CustomSlots
             {
                 if (used_defaults <= 0) return;
                 foreach (var slot in slots.Where(i => i.is_default).Select(i => i.item))
-                    DefaultHelper.RemoveMechLab(whelper, slot, helper);
+                    DefaultHelper.RemoveMechLab(location, slot);
             }
 
             var support = slotType.Descriptor.HaveSupports
@@ -563,10 +558,10 @@ namespace CustomSlots
             if (!need_fix && defaults.Count == 0)
                 return;
             foreach (var itemRecord in slots.Where(i => i.is_default))
-                DefaultHelper.RemoveMechLab(whelper, itemRecord.item, helper);
+                DefaultHelper.RemoveMechLab(location, itemRecord.item);
             foreach (var needDefault in need_defaults)
             {
-                DefaultHelper.AddMechLab(needDefault.item.Description.Id, needDefault.item.ComponentType, helper, location);
+                DefaultHelper.AddMechLab(needDefault.item.Description.Id, needDefault.item.ComponentType, location);
             }
         }
 
@@ -583,11 +578,11 @@ namespace CustomSlots
 
                 foreach (var item in to_remove)
                 {
-                    DefaultHelper.RemoveMechLab(item.ComponentDefID, item.ComponentDefType, helper, item.MountedLocation);
+                    //DefaultHelper.RemoveMechLab(item.ComponentDefID, item.ComponentDefType, helper, item.MountedLocation);
                     result.Set(item.MountedLocation);
                 }
 
-                var to_check = mech.Inventory.Where(i => i.Is<CustomSlotDynamic>(out var d) && d.ExtentionID == extention.id).ToList();
+                var to_check = mech.Inventory.Where(i => i.Is<CustomSlotDynamic>(out var dd) && dd.ExtentionID == extention.id).ToList();
 
                 if (to_check.Count == 0)
                     continue;
@@ -645,14 +640,15 @@ namespace CustomSlots
                             result.Set(freeRecord.location);
                             if (max >= ext_count)
                             {
-                                for (int i = 0; i < ext_count; i++)
-                                    DefaultHelper.AddMechLab(d.ExtentionID, d.ExtentionType, helper, freeRecord.location);
+                                for (int i = 0; i < ext_count; i++) { 
+                                  //TODO  //DefaultHelper.AddMechLab(d.ExtentionID, d.ExtentionType, helper, freeRecord.location);
+                                }
                                 break;
                             }
                             else
                             {
                                 for (int i = 0; i < max; i++)
-                                    DefaultHelper.AddMechLab(d.ExtentionID, d.ExtentionType, helper, freeRecord.location);
+                                    //TODO  //DefaultHelper.AddMechLab(d.ExtentionID, d.ExtentionType, helper, freeRecord.location);
                                 ext_count -= max;
                             }
                         }
@@ -677,8 +673,8 @@ namespace CustomSlots
                     .Select(i => new
                     {
                         location = i.Key,
-                        slots = i.Sum(s => s.slot.GetSlotsUsed(mechdef, mechdef.Inventory.ToInventory())),
-                        supports = i.Sum(s => s.slot.GetSupportUsed(mechdef, mechdef.Inventory.ToInventory()))
+                        slots = i.Sum(ss => ss.slot.GetSlotsUsed(mechdef, mechdef.Inventory.ToInventory())),
+                        supports = i.Sum(ss => ss.slot.GetSupportUsed(mechdef, mechdef.Inventory.ToInventory()))
                     })
                     .ToList();
 

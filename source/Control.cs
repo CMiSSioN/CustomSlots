@@ -10,9 +10,7 @@ using HBS.Logging;
 using HBS.Util;
 
 
-namespace CustomSlots
-{
-
+namespace CustomSlots {
 
     public class Control
     {
@@ -21,7 +19,7 @@ namespace CustomSlots
 
         private static Control _instance;
 
-        public static Control Instance => _instance ??= new Control();
+        public static Control Instance { get { if (_instance == null) { _instance = new Control(); }; return _instance; } }
 
 
 
@@ -61,7 +59,7 @@ namespace CustomSlots
 
                 CustomComponents.Registry.RegisterSimpleCustomComponents(Assembly.GetExecutingAssembly());
 
-                CustomComponents.Validator.RegisterClearInventory(CustomSlotControler.ClearInventory);
+                //CustomComponents.Validator.RegisterClearInventory(CustomSlotControler.ClearInventory);
                 CustomComponents.Validator.RegisterMechValidator(CarryWeightController.ValidateMech, CarryWeightController.CanBeFielded);
                 CustomComponents.Validator.RegisterMechValidator(CustomSlotControler.ValidateMech, CustomSlotControler.CanBeFielded);
                 

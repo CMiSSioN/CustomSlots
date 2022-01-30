@@ -12,32 +12,31 @@ namespace CustomSlots
 
     public interface IUseTonnage
     {
-        public float GetTonnage(MechDef mech, IEnumerable<InvItem> inventory);
-        public float GetTonnage(MechDef mech);
+        float GetTonnage(MechDef mech, IEnumerable<InvItem> inventory);
+        float GetTonnage(MechDef mech);
     }
 
     public interface IAddTonnage
     {
-        public float GetAddTonnage(MechDef mech, IEnumerable<InvItem> inventory);
-        public float GetAddTonnage(MechDef mech);
+        float GetAddTonnage(MechDef mech, IEnumerable<InvItem> inventory);
+        float GetAddTonnage(MechDef mech);
     }
 
     public interface IUseSlots
     {
-        public string SlotName { get; }
-        public int GetSlotsUsed(MechDef mech);
-        public int GetSupportUsed(MechDef mech);
-        public int GetSlotsUsed(MechDef mech, IEnumerable<InvItem> inventory);
-        public int GetSupportUsed(MechDef mech, IEnumerable<InvItem> inventory);
+        string SlotName { get; }
+        int GetSlotsUsed(MechDef mech);
+        int GetSupportUsed(MechDef mech);
+        int GetSlotsUsed(MechDef mech, IEnumerable<InvItem> inventory);
+        int GetSupportUsed(MechDef mech, IEnumerable<InvItem> inventory);
     }
 
     public interface ISlotSupport
     {
-        public string SlotName { get; }
-        public ChassisLocations Location { get; }
-        public int GetSupportAdd(MechDef mech, IEnumerable<InvItem> inventory);
-        public int GetSupportAdd(MechDef mech);
-
+        string SlotName { get; }
+        ChassisLocations Location { get; }
+        int GetSupportAdd(MechDef mech, IEnumerable<InvItem> inventory);
+        int GetSupportAdd(MechDef mech);
     }
 
 }

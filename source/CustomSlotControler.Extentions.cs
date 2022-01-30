@@ -13,7 +13,7 @@ namespace CustomSlots
 
         public static IEnumerable<InvItem> ToInventory(this IEnumerable<MechComponentRef> items)
         {
-            return items.Select(i => new InvItem { item = i, location = i.MountedLocation});
+            return items.Select(i => new InvItem ( i, i.MountedLocation));
         }
 
         public static ISlotsOverride GetSlotsOverride(this MechDef mech, string type)
@@ -78,9 +78,9 @@ namespace CustomSlots
 
             foreach (var item in inventory)
             {
-                if (item.item.IsSupport(slotname, out var support))
+                if (item.Item.IsSupport(slotname, out var support))
                     if (support.Location.HasFlag(location) ||
-                        (support.Location == ChassisLocations.None && item.location == location))
+                        (support.Location == ChassisLocations.None && item.Location == location))
                         num += support.GetSupportAdd(mech, inventory);
             }
 
@@ -92,7 +92,7 @@ namespace CustomSlots
             if (inventory == null)
                 inventory = mech.Inventory.ToInventory();
 
-            return inventory.Where(i => i.item.IsSupport(slotname)).Select(i => i.item.GetSupport(slotname))
+            return inventory.Where(i => i.Item.IsSupport(slotname)).Select(i => i.Item.GetSupport(slotname))
                 .Sum(i => i.GetSupportAdd(mech, inventory));
         }
 

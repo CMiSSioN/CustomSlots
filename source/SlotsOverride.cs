@@ -7,9 +7,9 @@ namespace CustomSlots
 {
     public interface ISlotsOverride
     {
-        public string SlotName { get; }
-        public location_record[] Locations { get; }
-        public def_record Default { get; }
+        string SlotName { get; }
+        location_record[] Locations { get; }
+        def_record Default { get; }
     }
 
 

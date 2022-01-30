@@ -63,7 +63,7 @@ namespace CustomSlots
             mech.SetInventory(inventory.ToArray());
         }
 
-        public override void OnItemGrabbed(IMechLabDraggableItem item, MechLabPanel mechLab, MechLabLocationWidget widget)
+        public override void OnItemGrab(IMechLabDraggableItem item, MechLabPanel mechLab, MechLabLocationWidget widget)
         {
             var affected = CustomSlotControler.AdjustDinamicsMechlab(mechLab);
             affected.Set(widget.loadout.Location);

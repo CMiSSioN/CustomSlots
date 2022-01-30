@@ -6,14 +6,12 @@ using System.Security;
 using BattleTech;
 using BattleTech.UI;
 using CustomComponents;
+using CustomComponents.Changes;
 
 namespace CustomSlots
 {
     [CustomComponent("SlotInfo", AllowArray = true)]
-    public class CustomSlotInfo : SimpleCustomComponent,
-        IUseSlots,
-        IOnInstalled, IOnItemGrabbed,
-        IPreValidateDrop
+    public class CustomSlotInfo : SimpleCustomComponent,IUseSlots, /*IOnInstalled,*/ IOnItemGrab, IPreValidateDrop
     {
         public int SlotsUsed { get; set; } = 1;
         public int SupportUsed { get; set; } = 0;
@@ -48,7 +46,7 @@ namespace CustomSlots
             mech.SetInventory(inventory.ToArray());
         }
 
-        public virtual void OnItemGrabbed(IMechLabDraggableItem item, MechLabPanel mechLab, MechLabLocationWidget widget)
+        public virtual void OnItemGrab(IMechLabDraggableItem item, MechLabPanel mechLab, MechLabLocationWidget widget)
         {
             var d = SlotsInfoDatabase.GetMechInfoByType(mechLab.activeMechDef, SlotName);
             CustomSlotControler.AdjustDefaultsMechlab(mechLab, widget, d);
@@ -96,7 +94,7 @@ namespace CustomSlots
                 })
                 .Aggregate(
                     new { slots = 0, supps = 0 },
-                    (total, next) => new { slots = total.slots + next.slots, supps = total.supps + next.supps }
+                    (total_loc, next) => new { slots = total_loc.slots + next.slots, supps = total_loc.supps + next.supps }
                     );
 
             var max_support = havesupports ? CustomSlotControler.GetSupportsForLocation(mech, SlotName, mountlocation) : 0 - fixitem.supps;
@@ -158,13 +156,13 @@ namespace CustomSlots
             {
                 var item_to_remove = location.LocalInventory.FirstOrDefault(i => i.ComponentRef == item.item);
                 if (item_to_remove != null)
-                    changes.Add(new RemoveChange(mountlocation, item_to_remove));
+                    changes.Add(new Change_Remove(item_to_remove.ComponentRef, item_to_remove.MountedLocation));
             }
 
             return null;
         }
 
-        public virtual string PreValidateDrop(MechLabItemSlotElement item, LocationHelper location, MechLabHelper mechlab)
+        public virtual string PreValidateDrop(MechLabItemSlotElement item, LocationHelper location)
         {
             var mech = location.mechLab.activeMechDef;
             var info = SlotsInfoDatabase.GetMechInfoByType(mech, SlotName);
@@ -177,5 +175,13 @@ namespace CustomSlots
 
             return null;
         }
+
+    public string PreValidateDrop(MechLabItemSlotElement item, ChassisLocations location) {
+      throw new NotImplementedException();
     }
+
+    public bool OnItemGrab(IMechLabDraggableItem item, MechLabPanel mechLab, out string error) {
+      throw new NotImplementedException();
+    }
+  }
 }
